@@ -1,0 +1,7 @@
+#give the name of the movement to create
+string move_name
+#give the duration of the movement to create in second
+uint8 duration
+---
+#tell if the movement creation succeed or failed
+bool   success
