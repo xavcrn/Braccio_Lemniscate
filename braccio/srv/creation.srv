@@ -4,4 +4,4 @@ string move_name
 uint8 duration
 ---
 #tell if the movement creation succeed or failed
-bool   success
+bool  success

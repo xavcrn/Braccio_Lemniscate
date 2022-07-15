@@ -1,7 +1,3 @@
-#include <socket>
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <strings.h>
 #include <string.h>
@@ -11,7 +7,6 @@
 #include <netdb.h>
 #include <vector>
 #include <fcntl.h>
-#include <errno.h>
 #include <dirent.h>
 
 #include "ros/ros.h"
@@ -23,46 +18,59 @@ using namespace std;
 
 #define PORT 4242
 #define SERIAL_PORT "/dev/ttyACM1"
-#define MOVE_DIR "./move/"
+#define MOVE_DIR "/home/poppy/catkin_ws/src/braccio/moves"
 
-class Braccio_robot(){
+//#define DEBUG
+
+bool Sequence;
+
+void Free_sequence(std_msgs::Bool retour){
+    Sequence = retour.data;
+}
+
+typedef void (*fptr)(std_msgs::Bool);
+
+class Braccio_robot{
     private:
         int serial_port; // port série controlant la base
+        char* serial_port_s;
         ros::NodeHandle* n;
         ros::ServiceClient createur_client;
         braccio::creation  createur_serveur;
         ros::Publisher joueur_pub;
         ros::Subscriber joueur_sub;
         int client_sd;
-        bool sequence; // Une séquence est-elle en cours ?
-        void free_sequence();
+        bool *sequence; // Une séquence est-elle en cours ?
+        fptr free_sequence;
+        
 
     public:
         vector<string> mouvements;
         int init();
-        braccio_robot(int _client_sd, ros::NodeHandle* _n, string _serial_port);
-        ~braccio_robot();
+        Braccio_robot(int _client_sd, ros::NodeHandle* _n, char* _serial_port, bool* _sequence, fptr _free_sequence);
+        ~Braccio_robot();
         int pilotage(char commande[]);
         int creation(char commande[]);
         int pause();
         void sleep();
 };
 
-Braccio_robot::free_sequence(){
-    sequence = false;
-}
-
-Braccio_robot::~braccio_robot(){
+Braccio_robot::~Braccio_robot(){
     sleep();  
 }
 
 void Braccio_robot::sleep(){
-    pasue();
+    #ifdef DEBUG
+    ROS_INFO("Braccio is going to sleep");
+    #endif
+    pause();
     std_msgs::String dodo;
     dodo.data = "sleep";
-    sequence = true;
+    #ifndef DEBUG
+    *sequence = true;
+    #endif
     joueur_pub.publish(dodo);
-    while(sequence);
+    while(*sequence);
 }
 
 int Braccio_robot::pause(){
@@ -70,27 +78,39 @@ int Braccio_robot::pause(){
     return pilotage(initialisation);
 }
 
-Braccio_robot::braccio_robot(int _client_sd, ros::NodeHandle* _n, char* _serial_port){
-    
+Braccio_robot::Braccio_robot(int _client_sd, ros::NodeHandle* _n, char* _serial_port, bool* _sequence, fptr _free_sequence){
+    free_sequence = _free_sequence;
+    serial_port_s = _serial_port;
     client_sd = _client_sd;
-    sequence = false;
+    sequence = _sequence;
+    *sequence = false;
     n = _n;
+    mouvements.clear();
     createur_client = n->serviceClient<braccio::creation>("creation");
     joueur_pub      = n->advertise<std_msgs::String>("mouvement",10);
-    joueur_sub      = n->subscribe("termine", 10, free_sequence);
+    joueur_sub      = n->subscribe("termine", 10, *free_sequence);
 }
 
 int Braccio_robot::init(){
-    int res = pause(); // mise en pause des moteurs
-    if(res){ // en cas d'erreur
+    int res;
+    serial_port = open(serial_port_s, O_RDWR | O_NONBLOCK);
+    if(serial_port < 0){
+        ROS_ERROR("Failed opening serial port %s",serial_port_s);
+        res = -2;
+    }
+
+    res = pause(); // mise en pause des moteurs
+
+    if(res >= 0){ // s'il n'y a pas d'erreur
         // Demander la mise en position initiale du bras
         std_msgs::String msg;
-        msg.append("initial");
-        sequence = true;
+        msg.data = "initial";
+        #ifndef DEBUG
+        *sequence = true;
+        #endif
         joueur_pub.publish(msg);
         // Attendre la terminaison du mouvement
-        while(sequence);
-        return res;
+        while(*sequence);
     }
     
     // charger la liste des mouvements depuis le dossier correspondant
@@ -107,21 +127,18 @@ int Braccio_robot::init(){
         ROS_ERROR("Error opening directory : %s",MOVE_DIR);
         return -1;
     }
-    serial_port = open(_serial_port, O_RDWR);
-    if(serial_port < 0){
-        ROS_ERROR("Failed opening serial port %s",_serial_port);
-        res = -2;
-    }
+    
     return res;
 }
 
-void Braccio_robot::creation(char commande[]){
+int Braccio_robot::creation(char commande[]){
+    ROS_INFO("Creating a new movement named : \"%s\"",commande + 2);
     string new_move(commande + 2);    
     //Envoyer la commande à pypot de créer un nouveau mouvement (via un service) 
     createur_serveur.request.move_name = new_move;
     createur_serveur.request.duration = (uint8_t)commande[1];
     createur_client.call(createur_serveur);
-    bool success = createur_serveur.response.success;
+    int success = createur_serveur.response.success;
     string result;
     if(success){
         result.append("success");
@@ -130,6 +147,7 @@ void Braccio_robot::creation(char commande[]){
         result.append("failure");
     }
     write(client_sd, result.data(), result.length());
+    return success;
 }
 
 int Braccio_robot::pilotage(char commande[]){
@@ -137,121 +155,142 @@ int Braccio_robot::pilotage(char commande[]){
     int res = write(serial_port, commande + 1, 4);
 
     if(res < 0){
-        string msg("lose base motors");
+        ROS_ERROR("Base motors lost");
+        string msg("Base motors lost");
         write(client_sd, msg.data(), msg.length());
     }
 
-    bool controlOeuf;
+    static bool controlOeuf;
     if(commande[5]){
         controlOeuf = true;
     } else {
         controlOeuf = false;
     }
 
-    if(joueSequence > 0 && sequence == false){
-        sequence = true;
+    if(commande[6] > 0 && *sequence == false){
+        *sequence = true;
         std_msgs::String msg;
         msg.data = mouvements[commande[6]-1].data();
+        #ifdef DEBUG
+        ROS_INFO("Publishing");
+        #endif
         joueur_pub.publish(msg);
+        #ifdef DEBUG
+        ROS_INFO("Published");
+        #endif
     }
-
     return res;
 }
 
 int main(int argc, char* argv[]){
-    ros::init(argc, argv, "controler_recept");
+    ros::init(argc, argv, "remote_server");
     ros::NodeHandle node;
     
     // Initialisation socket serveur
     int server_sd;
     struct sockaddr_in server_sock;
     server_sock.sin_family = AF_INET;
-    server_sock.sin_port = PORT;
+    server_sock.sin_port = htons(PORT);
     server_sock.sin_addr.s_addr = INADDR_ANY;
     server_sd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_sd < 0){
         ROS_ERROR("Erreur lors de la création de la socket");
         exit(-1);
     }    
-    if(bind(server_sd, (struct sockaddr*) &server_sock, sizeof(server_sock)) == -1){
+    if(bind(server_sd, (struct sockaddr*) &server_sock, sizeof(server_sock)) < 0){
         ROS_ERROR("Erreur lors du bind");
         exit(-1);
     }
-    listen(server_sd, 1);
+    listen(server_sd, 2);
 
     // Prépare une socket client
     int client_sd;
     struct sockaddr_in client_sock;
-    int client_sock_length;
+    unsigned int client_sock_length;
     client_sock_length = sizeof(client_sock);
     
     string success("success");
     string error("error");
     string initialized("initialized");
+    string off("turned_off");
+
+    bool end = false;
 
     while(ros::ok()){
-        client_sd = accept(serveur_sd, (struct sockaddr*) &client_sock, &client_sock_length);
-        
+        ROS_INFO("Waiting for a new connectionon port %d",PORT);
+        client_sd = accept(server_sd, (struct sockaddr*) &client_sock, &client_sock_length);
+        ROS_INFO("Connection accepted");
+
         if(client_sd < 0){
             ROS_ERROR("Erreur sur accept");
-            continue;
+            break;
         }
         char recep[256];
         char envoi[256];
         int n;
 
-        // Encoie un message pour indiquer le succès de la connexion
-        
+        // Envoie un message pour indiquer le succès de la connexion
         write(client_sd, success.data(), success.length());
 
-        Braccio_robot braccio_robot(client_sd, &node, SERIAL_PORT);
+        Braccio_robot braccio_robot(client_sd, &node, SERIAL_PORT, &Sequence, &Free_sequence);
+
+        ROS_INFO("Initializing Braccio");
 
         if(braccio_robot.init() < 0){
             ROS_ERROR("Erreur lors de l'initialisaiton de Braccio");
             write(client_sd, error.data(), error.length());
             close(client_sd);
-            continue;
+            break;
         }
+
+        ROS_INFO("Braccio initialized");
 
         write(client_sd, initialized.data(), initialized.length());
 
+        char nb_mouv = braccio_robot.mouvements.size();
+        
+        ROS_INFO("%d movement(s) found",nb_mouv);
+
         // Récupère le nombre de mouvements enregistrés
-        write(client_sd, (char) mouvements.size(), 1);
+        write(client_sd, &nb_mouv, 1);
         // Envoie la liste des mouvements enregistrés
-        for(int k = 0; k < mouvements.size(); k++){
-            write(client_sd, mouvements[k].data(), mouvements[k].length());
+        for(int k = 0; k < braccio_robot.mouvements.size(); k++){
+            write(client_sd, (char*) braccio_robot.mouvements[k].data(), braccio_robot.mouvements[k].length());
         }
+
+        ROS_INFO("Begin control loop");
 
         bool run = true;
         while(ros::ok() && run){
-            n = read(client_sock, recep, sizeof(recep));
+            n = read(client_sd, recep, sizeof(recep));
             if(n < 0){ // Problème de connexion, mise en pause de la base (par sécurité)
                 braccio_robot.pause();
             } else {
                 switch(recep[0]){
                     case 0 : // ordre de pause
                         if(recep[1] == 1 && recep[2] == 2 && recep[3] == 3){
+                            ROS_INFO("Pause");
                             braccio_robot.pause();
                         }
                         break;
                     case 1 : // pilotage
                         braccio_robot.pilotage(recep);
                         break;
-                    case 2 :
+                    case 2 : // creation
                         braccio_robot.creation(recep);
                         break;
-                    case 'C':
-                        if(recep[1] == 'L' && recep[2] == 'O' && recep[3] == 'S' && recep[4] == 'E'){
-                            run = false;
-                            braccio_robot.init();
-                        }
+                    case 3 : // fin
+                        ROS_INFO("Connection closed by client. Braccio is going to sleep.");
+                        run = false;
+                        braccio_robot.sleep();
                         break;
                     default :
                         run = false;
                         break;
                 }
             }
-        }
+        }        
+        write(client_sd, off.data(), off.length());
         close(client_sd);
     }
     close(server_sd);

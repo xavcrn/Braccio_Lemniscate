@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="braccio" name="remote_server" type="remote_server_debug_mode" output="screen" />
+</launch>
