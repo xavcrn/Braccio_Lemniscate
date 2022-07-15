@@ -1,0 +1,2 @@
+The Lemnsicate.launch file is the final one allowing to control the robot as expected.
+The remote_control_test.launch file is a launch file allowing to test the robot base control only. It launches the remote_server compiled in debug mode (with the line "#define DEBUG" uncomented)
