@@ -23,9 +23,15 @@ using namespace std;
 //#define DEBUG
 
 bool Sequence;
+int client_sd;
+string success("success");
+string error("error");
 
 void Free_sequence(std_msgs::Bool retour){
     Sequence = retour.data;
+    if(Sequence == False){
+        write()
+    }
 }
 
 typedef void (*fptr)(std_msgs::Bool);
@@ -37,9 +43,9 @@ class Braccio_robot{
         ros::NodeHandle* n;
         ros::ServiceClient createur_client;
         braccio::creation  createur_serveur;
-        ros::Publisher joueur_pub;
-        ros::Subscriber joueur_sub;
-        int client_sd;
+        ros::Publisher egg_control;
+        ros::Publisher player_pub;
+        ros::Subscriber player_sub;
         bool *sequence; // Une séquence est-elle en cours ?
         fptr free_sequence;
         
@@ -47,7 +53,7 @@ class Braccio_robot{
     public:
         vector<string> mouvements;
         int init();
-        Braccio_robot(int _client_sd, ros::NodeHandle* _n, char* _serial_port, bool* _sequence, fptr _free_sequence);
+        Braccio_robot(ros::NodeHandle* _n, char* _serial_port, bool* _sequence, fptr _free_sequence);
         ~Braccio_robot();
         int pilotage(char commande[]);
         int creation(char commande[]);
@@ -69,7 +75,7 @@ void Braccio_robot::sleep(){
     #ifndef DEBUG
     *sequence = true;
     #endif
-    joueur_pub.publish(dodo);
+    player_pub.publish(dodo);
     while(*sequence);
 }
 
@@ -78,17 +84,17 @@ int Braccio_robot::pause(){
     return pilotage(initialisation);
 }
 
-Braccio_robot::Braccio_robot(int _client_sd, ros::NodeHandle* _n, char* _serial_port, bool* _sequence, fptr _free_sequence){
+Braccio_robot::Braccio_robot(ros::NodeHandle* _n, char* _serial_port, bool* _sequence, fptr _free_sequence){
     free_sequence = _free_sequence;
     serial_port_s = _serial_port;
-    client_sd = _client_sd;
     sequence = _sequence;
     *sequence = false;
     n = _n;
     mouvements.clear();
-    createur_client = n->serviceClient<braccio::creation>("creation");
-    joueur_pub      = n->advertise<std_msgs::String>("mouvement",10);
-    joueur_sub      = n->subscribe("termine", 10, *free_sequence);
+    createur_client = n->serviceClient<braccio::creation>("create_move");
+    player_pub      = n->advertise<std_msgs::String>("play_move", 5);
+    player_sub      = n->subscribe("movement_playing", 5, *free_sequence);
+    egg_control     = n->advertise<std_msgs::Bool>("egg_activation", 5);
 }
 
 int Braccio_robot::init(){
@@ -108,7 +114,7 @@ int Braccio_robot::init(){
         #ifndef DEBUG
         *sequence = true;
         #endif
-        joueur_pub.publish(msg);
+        player_pub.publish(msg);
         // Attendre la terminaison du mouvement
         while(*sequence);
     }
@@ -135,6 +141,8 @@ int Braccio_robot::creation(char commande[]){
     ROS_INFO("Creating a new movement named : \"%s\"",commande + 2);
     string new_move(commande + 2);    
     //Envoyer la commande à pypot de créer un nouveau mouvement (via un service) 
+    string recording("recording");
+    write(client_sd, recording.data(), recording.length());
     createur_serveur.request.move_name = new_move;
     createur_serveur.request.duration = (uint8_t)commande[1];
     createur_client.call(createur_serveur);
@@ -143,6 +151,7 @@ int Braccio_robot::creation(char commande[]){
     if(success){
         result.append("success");
         mouvements.push_back(new_move);
+        write(client_sd, success.data(), success.length());
     } else {
         result.append("failure");
     }
@@ -160,21 +169,22 @@ int Braccio_robot::pilotage(char commande[]){
         write(client_sd, msg.data(), msg.length());
     }
 
-    static bool controlOeuf;
+    std_msgs::Bool controlOeuf;
     if(commande[5]){
-        controlOeuf = true;
+        controlOeuf.data = true;
     } else {
-        controlOeuf = false;
+        controlOeuf.data = false;
     }
+    egg_control.publish(controlOeuf);
 
-    if(commande[6] > 0 && *sequence == false){
+    if(*sequence == false && commande[6] > 0){
         *sequence = true;
         std_msgs::String msg;
         msg.data = mouvements[commande[6]-1].data();
         #ifdef DEBUG
         ROS_INFO("Publishing");
         #endif
-        joueur_pub.publish(msg);
+        player_pub.publish(msg);
         #ifdef DEBUG
         ROS_INFO("Published");
         #endif
@@ -204,13 +214,10 @@ int main(int argc, char* argv[]){
     listen(server_sd, 2);
 
     // Prépare une socket client
-    int client_sd;
     struct sockaddr_in client_sock;
     unsigned int client_sock_length;
     client_sock_length = sizeof(client_sock);
     
-    string success("success");
-    string error("error");
     string initialized("initialized");
     string off("turned_off");
 
@@ -232,7 +239,7 @@ int main(int argc, char* argv[]){
         // Envoie un message pour indiquer le succès de la connexion
         write(client_sd, success.data(), success.length());
 
-        Braccio_robot braccio_robot(client_sd, &node, SERIAL_PORT, &Sequence, &Free_sequence);
+        Braccio_robot braccio_robot(&node, SERIAL_PORT, &Sequence, &Free_sequence);
 
         ROS_INFO("Initializing Braccio");
 
