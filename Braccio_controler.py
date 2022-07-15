@@ -1,6 +1,3 @@
-from curses import A_BLINK
-from ftplib import error_reply
-from pickletools import UP_TO_NEWLINE
 from numpy import uint8, uint8
 import pygame
 import socket
