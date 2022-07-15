@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
+
+#This script is used in order to know the values sent by the eggs
+
 import os,sys,time
-import rospy
+
+
 
 pid = os.fork()
 
