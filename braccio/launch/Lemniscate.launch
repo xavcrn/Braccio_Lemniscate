@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
     <node pkg="braccio" name="remote_server" type="remote_server"      output="screen"/>
-    <node pkg="braccio" name="egg_receiver"  type="reciever.py"        output="screen" />
+    <node pkg="braccio" name="egg_receiver"  type="receiver.py"        output="screen" />
     <node pkg="braccio" name="arm_controler" type="pypot_controler.py" output="screen" />
 </launch>
