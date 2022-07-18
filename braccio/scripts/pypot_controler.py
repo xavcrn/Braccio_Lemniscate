@@ -5,7 +5,7 @@ from time import sleep
 
 from braccio.msg import egg_angles
 from braccio.srv import creation, creationResponse
-from std_msgs.msg import Bool,String
+from std_msgs.msg import Bool, String
 from pypot.primitive.move import MoveRecorder, Move, MovePlayer
 
 ## Define all global variables
@@ -27,7 +27,7 @@ braccio = from_json("/home/poppy/catkin_ws/src/braccio/pypot_ressources/braccio.
 move_recorder = MoveRecorder(braccio, 50, braccio.motors)
 
 rospy.init_node("pypot_controler")
-pub = rospy.Publisher("movement_playing", Bool,queue_size=5)
+pub = rospy.Publisher("movement_playing", Bool, queue_size=5)
 
 def set_speeds(speeds):
     for k in range(6):
@@ -46,12 +46,13 @@ def initial():
     wait_for_position()
 
 def go_sleep():
-    rospy.loginfo("Go to initial position then to sleeping position")
+    rospy.loginfo("pypot_controler : Go to initial position then to sleeping position")
     initial()
     set_speeds(safety_motor_speed)
     for k in range(6):
         braccio.arm[k].goal_position = sleeping_position[k]
     wait_for_position()
+    sleep(0.1)
     braccio.compliant = True
 
 def record(request):
@@ -66,14 +67,18 @@ def record(request):
 
 def play(move):
     # If want to go to initial position
+    rospy.loginfo("pypot_controler : Asked to play move")
     if move.data == "initial":
+        rospy.loginfo("pypot_controler : Go to initial position as asked")
         initial()
+        rospy.loginfo("pypot_controler : Initial position reached")
         pub.publish(False)
         return
     # If want to go to sleep position
     if move.data == "sleep":
         go_sleep()
         pub.publish(False)
+        rospy.loginfo("pypot_controler : Sleeping position reached")
         return
     # If want to play recorded moves
     # Open move file
@@ -114,13 +119,13 @@ rospy.Subscriber("eggs_angles", egg_angles, egg_set_position)
 # Start creation service
 s = rospy.Service("create_move", creation, record)
 
-rospy.loginfo("Braccio arm Launched")
+rospy.loginfo("pypot_controler : Braccio arm Launched")
 
-initial()
+#initial()
 
-rospy.loginfo("Initial position reached")
+#rospy.loginfo("pypot_controler : Initial position reached")
 
-rate = rospy.rate(20)
+rate = rospy.Rate(20)
 
 while not rospy.is_shutdown():
     if egg_enable:
@@ -131,12 +136,18 @@ while not rospy.is_shutdown():
     rate.sleep()
 
 # Test if the robot is in sleeping position before leaving
+"""
 sleeping = True
 for k in range(6):
-    if braccio.motors[k].goal_position != sleeping_position[k]:
+    if abs(braccio.motors[k].present_position - sleeping_position[k]) > 3:
         sleeping = False
         break
 if not sleeping:
+    rospy.loginfo("pypot_controler : Wasn't sleeping yet")
     go_sleep()
+"""
+if not braccio.compliant:
+    go_sleep()
+    braccio.compliant = True
 
-rospy.loginfo("Braccio is now sleeping")
+rospy.loginfo("pypot_controler : Braccio is now sleeping")
