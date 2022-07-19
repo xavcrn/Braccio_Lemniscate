@@ -16,7 +16,7 @@ sleeping_position = [0,4,-109,-72,0,0]
 egg_motor_speed = [10,10,10,10,10,30]
 max_motor_speed = [90,100,110,120,130,90]
 safety_motor_speed = [35,35,35,35,35,35]
-reach_initial_speed = [60,60,60,60,60,60]
+reach_initial_speed = [50,50,50,50,50,50]
 # Disable egg_control by default
 egg_enable = False
 egg_position = [0,0,0,0,0,0,0]
@@ -24,7 +24,7 @@ egg_position = [0,0,0,0,0,0,0]
 # Load braccio.json configuration
 braccio = from_json("/home/poppy/catkin_ws/src/braccio/pypot_ressources/braccio.json")
 # Initialise move recorder
-move_recorder = MoveRecorder(braccio, 50, braccio.motors)
+
 
 rospy.init_node("pypot_controler")
 pub = rospy.Publisher("movement_playing", Bool, queue_size=5)
@@ -56,10 +56,13 @@ def go_sleep():
     braccio.compliant = True
 
 def record(request):
-    braccio.compliant = True
+    rospy.loginfo("pypot_controler : Recording movement \"{}\"".format(request.move_name))
+    move_recorder = MoveRecorder(braccio, 50, braccio.motors)
+    braccio.compliant = True    
     move_recorder.start()
     sleep(request.duration)
     move_recorder.stop()
+    braccio.compliant = False
     move_name = MOVE_PATH + request.move_name 
     with open(move_name, 'w') as f:
         move_recorder.move.save(f)
@@ -85,6 +88,7 @@ def play(move):
     move_name = MOVE_PATH + move.data
     with open(move_name) as f:
         m = Move.load(f)
+    move_player = MovePlayer(braccio, m)
     # Go to first position before begining movement
     set_speeds(reach_initial_speed)
     braccio.compliant = False
@@ -94,10 +98,16 @@ def play(move):
     braccio.arm[3].goal_position = m.positions()[0]['m3'][0]
     braccio.arm[4].goal_position = m.positions()[0]['m4'][0]
     braccio.arm[5].goal_position = m.positions()[0]['m5'][0]
+    for m in braccio.arm:
+        if m.goal_position < min(m.angle_limit):
+            m.goal_position = m.angle_limit[0]
+        elif m.goal_position > max(m.angle_limit):
+            m.goal_position = m.angle_limit[1]
     wait_for_position()
     # Play movement
+    rospy.loginfo("pypot_controler : now playing : \"{}\"".format(move.data))
     set_speeds(max_motor_speed)
-    move_player = MovePlayer(braccio, m)
+    
     pub.publish(True)
     move_player.start()
     # Wait for movement to end
