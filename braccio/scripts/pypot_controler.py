@@ -23,8 +23,6 @@ egg_position = [0,0,0,0,0,0,0]
 
 # Load braccio.json configuration
 braccio = from_json("/home/poppy/catkin_ws/src/braccio/pypot_ressources/braccio.json")
-# Initialise move recorder
-
 
 rospy.init_node("pypot_controler")
 pub = rospy.Publisher("movement_playing", Bool, queue_size=5)
@@ -36,7 +34,7 @@ def set_speeds(speeds):
 def wait_for_position():
     for m in braccio.arm:
         while abs(m.goal_position - m.present_position) > 1:
-            sleep(0.2)
+            sleep(0.1)
 
 def initial():
     braccio.compliant = False
@@ -46,7 +44,6 @@ def initial():
     wait_for_position()
 
 def go_sleep():
-    rospy.loginfo("pypot_controler : Go to initial position then to sleeping position")
     initial()
     set_speeds(safety_motor_speed)
     for k in range(6):
@@ -70,9 +67,7 @@ def record(request):
 
 def play(move):
     # If want to go to initial position
-    rospy.loginfo("pypot_controler : Asked to play move")
     if move.data == "initial":
-        rospy.loginfo("pypot_controler : Go to initial position as asked")
         initial()
         rospy.loginfo("pypot_controler : Initial position reached")
         pub.publish(False)
@@ -115,6 +110,7 @@ def play(move):
     pub.publish(False)
 
 def egg_activation(egg_order):
+    global egg_enable
     egg_enable = egg_order.data
     
 def egg_set_position(egg_target):
@@ -124,6 +120,7 @@ def egg_set_position(egg_target):
     egg_position[3] = egg_target.m3
     egg_position[4] = egg_target.m4
     egg_position[5] = egg_target.m5
+    rospy.loginfo("egg position set")
 
 # Initialize all subscribers
 rospy.Subscriber("egg_activation", Bool, egg_activation)
@@ -135,17 +132,13 @@ s = rospy.Service("create_move", creation, record)
 
 rospy.loginfo("pypot_controler : Braccio arm Launched")
 
-#initial()
-
-#rospy.loginfo("pypot_controler : Initial position reached")
-
 rate = rospy.Rate(20)
 
+rospy.loginfo("pypot_controler : Enterring loop")
 while not rospy.is_shutdown():
     if egg_enable:
         set_speeds(egg_motor_speed)
         for k in range(6):
-            braccio.motors[k].compliant = False
             braccio.motors[k].goal_position = egg_position[k]
     rate.sleep()
 

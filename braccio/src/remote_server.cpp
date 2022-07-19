@@ -179,13 +179,16 @@ int Braccio_robot::pilotage(char commande[]){
         write(client_sd, msg.data(), msg.length());
     }
 
-    std_msgs::Bool controlOeuf;
-    if(commande[5]){
+    // Envoie du message seulement sur front
+    static std_msgs::Bool controlOeuf;
+    if(commande[5] && !controlOeuf.data){
         controlOeuf.data = true;
-    } else {
+        egg_control->publish(controlOeuf);
+    } else if(!commande[5] && controlOeuf.data){
         controlOeuf.data = false;
+        egg_control->publish(controlOeuf);
     }
-    egg_control->publish(controlOeuf);
+    
 
     // Commandes de séquences
     if(run == true){
