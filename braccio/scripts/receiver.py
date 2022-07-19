@@ -21,7 +21,7 @@ if pid == 0 :
 	os.system("sudo /home/poppy/catkin_ws/src/braccio/receiver/receive")
 
 else :
-	pub = rospy.Publisher('eggs_angles', egg_angles, queue_size = 10)
+	pub = rospy.Publisher('egg_angles', egg_angles, queue_size = 10)
 	rospy.init_node("egg_receiver")
 	time.sleep(0.5)
 	rospy.loginfo("Opening pipe for reading")

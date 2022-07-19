@@ -118,13 +118,17 @@ def egg_activation(egg_order):
     egg_enable = egg_order.data
     
 def egg_set_position(egg_target):
-    for k in range(6):
-        egg_position[k] = egg_target[k]
+    egg_position[0] = egg_target.m0
+    egg_position[1] = egg_target.m1
+    egg_position[2] = egg_target.m2
+    egg_position[3] = egg_target.m3
+    egg_position[4] = egg_target.m4
+    egg_position[5] = egg_target.m5
 
 # Initialize all subscribers
 rospy.Subscriber("egg_activation", Bool, egg_activation)
 rospy.Subscriber("play_move", String, play)
-rospy.Subscriber("eggs_angles", egg_angles, egg_set_position)
+rospy.Subscriber("egg_angles", egg_angles, egg_set_position)
 
 # Start creation service
 s = rospy.Service("create_move", creation, record)
@@ -146,16 +150,6 @@ while not rospy.is_shutdown():
     rate.sleep()
 
 # Test if the robot is in sleeping position before leaving
-"""
-sleeping = True
-for k in range(6):
-    if abs(braccio.motors[k].present_position - sleeping_position[k]) > 3:
-        sleeping = False
-        break
-if not sleeping:
-    rospy.loginfo("pypot_controler : Wasn't sleeping yet")
-    go_sleep()
-"""
 if not braccio.compliant:
     go_sleep()
     braccio.compliant = True
