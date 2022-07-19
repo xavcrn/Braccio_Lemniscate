@@ -70,12 +70,12 @@ else :
 			sX = [sX[0]/nX[0],sX[1]/nX[1],sX[2]/nX[2]]
 			sY = [sY[0]/nY[0],sY[1]/nY[1],sY[2]/nY[2]]
 
-			angles.m0 = int(resize(sX[0], 240, 510, -180/2, 180/2))
-			angles.m1 = int(resize(sY[0], 240, 510, -120/2, 120/2))
-			angles.m2 = int(resize(sX[1], 240, 510, -120/2, 120/2))
-			angles.m3 = int(resize(sY[1], 240, 510, -100/2, 100/2))
-			angles.m4 = int(resize(sX[2], 240, 510, -180/2, 180/2))
-			angles.m5 = int(resize(sY[2], 240, 510,  -85,   5))
+			angles.m0 = int(resize(sX[0], 240, 510, -180, 180))
+			angles.m1 = int(resize(sY[0], 240, 510, -120, 120))
+			angles.m2 = int(resize(sX[1], 240, 510, -120, 120))
+			angles.m3 = int(resize(sY[1], 240, 510, -100, 100))
+			angles.m4 = int(resize(sX[2], 240, 510, -180, 180))
+			angles.m5 = int(resize(sY[2], 240, 510,    0,  90))
 			
 			#print(int(sX[0]),int(sY[0]),int(sX[1]),int(sY[1]),int(sX[2]),int(sY[2]))
 
