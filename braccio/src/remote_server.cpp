@@ -192,7 +192,13 @@ int Braccio_robot::pilotage(char commande[]){
         ros::spinOnce();
     }
     if(run == true && Sequence == false){ // Sequence est redescendu à false
+        #ifdef DEBUG3
+        ROS_INFO("remote_server : Sequence done");
+        #endif
         write(client_sd, done.data(), done.length());
+        #ifdef DEBUG3
+        ROS_INFO("remote_server : Done sent");
+        #endif
         run = false;
     }
     else if(run == true && Sequence == true){
@@ -317,8 +323,10 @@ int main(int argc, char* argv[]){
         // Récupère le nombre de mouvements enregistrés
         write(client_sd, &nb_mouv, 1);
         // Envoie la liste des mouvements enregistrés
+        char buf[2];
         for(int k = 0; k < braccio_robot.mouvements.size(); k++){
             write(client_sd, (char*) braccio_robot.mouvements[k].data(), braccio_robot.mouvements[k].length());
+            read(client_sd, buf, 2);
         }
 
         ROS_INFO("remote_server : Begin control loop");
