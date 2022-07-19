@@ -1,3 +1,6 @@
+from curses import A_BLINK
+from ftplib import error_reply
+from pickletools import UP_TO_NEWLINE
 from numpy import uint8, uint8
 import pygame
 import socket
@@ -121,9 +124,10 @@ if not error:
     mouvements = []
     print("Récupération de la liste des mouvements enregistrés")
     n = int.from_bytes(braccio.recv(1),"little") #récupération du nombre de mouvements enregistrés
-    print("{} mouvment(s) disponible(s)".format(n))
+    print("{} mouvement(s) disponible(s)".format(n))
     for k in range(n):
         mouvements.append(braccio.recv(256))
+        braccio.send(b'ok')
         print(mouvements[k])
 
     #Menu principal
@@ -167,6 +171,7 @@ def creation_mouvement():
                     creation = False
                 else:
                     msg = "Le mouvement \"" + nom + "\" a été créer avec succès"
+                    mouvements.append(nom)
                     fin_creation = True
         #"""#debug
 
@@ -331,6 +336,12 @@ def pilotage():
         msg_to_send = [uint8(1),sens_gauche,moteur_gauche,sens_droit,moteur_droit,controlOeuf,joueSequence] # uint8(1) is to tell Braccio it is a command order
         braccio.send(bytes(msg_to_send))
         #"""#debug
+        if jouer_mouvement:
+            if joueSequence != 0:
+                joueSequence = 0
+            data = braccio.recv(256)
+            if data == b'done':
+                jouer_mouvement = False
 
         #refresh display
         pygame.display.flip()
