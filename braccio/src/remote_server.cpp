@@ -61,7 +61,7 @@ class Braccio_robot{
 };
 
 Braccio_robot::~Braccio_robot(){
-    sleep();  
+    close(serial_port);
 }
 
 void Braccio_robot::sleep(){
@@ -114,9 +114,9 @@ int Braccio_robot::init(){
         player_pub->publish(msg);
         #ifdef DEBUG2
         ROS_INFO("remote_server : Publish : \"%s\"   Waiting for answer",msg.data.c_str());
-        #endif
-        
         ROS_INFO("remote_server : spinOnce");
+        #endif
+                
         // Attendre la terminaison du mouvement
         while(Sequence){
             ros::spinOnce();
@@ -354,7 +354,8 @@ int main(int argc, char* argv[]){
                         braccio_robot.creation(recep);
                         break;
                     case 3 : // fin
-                        ROS_INFO("remote_server : Connection closed by client. Braccio is going to sleep.");
+                        ROS_INFO("remote_server : Connection closed by client.");
+                        braccio_robot.sleep();
                         run = false;
                         break;
                     default :

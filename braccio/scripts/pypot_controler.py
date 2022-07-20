@@ -13,7 +13,7 @@ MOVE_PATH = "/home/poppy/catkin_ws/src/braccio/moves/"
 # Define sleeping position
 sleeping_position = [0,4,-109,-72,0,0]
 # Define speeds
-egg_motor_speed = [10,10,10,10,10,30]
+egg_motor_speed = [10,10,10,10,30,30]
 max_motor_speed = [90,100,110,120,130,90]
 safety_motor_speed = [35,35,35,35,35,35]
 reach_initial_speed = [50,50,50,50,50,50]
@@ -120,7 +120,6 @@ def egg_set_position(egg_target):
     egg_position[3] = egg_target.m3
     egg_position[4] = egg_target.m4
     egg_position[5] = egg_target.m5
-    rospy.loginfo("egg position set")
 
 # Initialize all subscribers
 rospy.Subscriber("egg_activation", Bool, egg_activation)

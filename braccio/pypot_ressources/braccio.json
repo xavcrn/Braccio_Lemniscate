@@ -32,7 +32,7 @@
             "offset": -43.0,
             "type": "MX-106",
             "id": 1,
-            "angle_limit": [ -120.0, 120.0],
+            "angle_limit": [ -130.0, 130.0],
             "orientation": "direct"
         },
         "m2": {
