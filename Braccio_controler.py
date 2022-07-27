@@ -6,11 +6,11 @@ import pygame
 import socket
 from time import sleep
 
-#Définition des couleurs
+#Definition des couleurs
 BLACK = pygame.Color('black')
 WHITE = pygame.Color('white')
 
-#Définition des boutons
+#Definition des boutons
 R_joy_y = 3
 L_joy_y = 1
 RB      = 5
@@ -31,9 +31,9 @@ FPS = 30
 # Premier octet : code de commande
 #   0 -> commande de pause
 #   1 -> commande de mouvement
-#   2 -> commande de création de mouvement
+#   2 -> commande de creation de mouvement
 
-#Classe permettant d'afficher du texte à l'écran
+#Classe permettant d'afficher du texte a l'ecran
 class TextPrint(object):
     def __init__(self):
         self.reset()
@@ -87,15 +87,15 @@ while not done:
     elif(pygame.joystick.get_count() > 1):
         textPrint.tprint(screen, "Ne branchez qu'une seule manette")
     else:
-        textPrint.tprint(screen, "Manette connectée")
-        textPrint.tprint(screen, "Connexion à Braccio..")
+        textPrint.tprint(screen, "Manette connectee")
+        textPrint.tprint(screen, "Connexion a Braccio..")
         done = True
     
     pygame.display.flip()
     clock.tick(FPS)
 joystick = pygame.joystick.Joystick(0)
 
-#Connection à Braccio
+#Connection a Braccio
 #"""#debug
 braccio = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 braccio.connect(("braccio.local", 4242))
@@ -103,7 +103,7 @@ data = braccio.recv(256)
 
 if data != b'success':
     print("Erreur de communication avec Braccio")
-    print("Reçu : <{}>".format(data))
+    print("Recu : <{}>".format(data))
     error = True
 
 if not error:
@@ -115,15 +115,15 @@ if not error:
 
     data = braccio.recv(256)
     if data != b'initialized':
-        print("Erreur d'initialisation, reçu <{}>".format(data))
+        print("Erreur d'initialisation, recu <{}>".format(data))
         error = True
     #"""#debug
 
-    #récupérer la liste des mouvements pré-enregistrés
+    #recuperer la liste des mouvements pre-enregistres
 
     mouvements = []
-    print("Récupération de la liste des mouvements enregistrés")
-    n = int.from_bytes(braccio.recv(1),"little") #récupération du nombre de mouvements enregistrés
+    print("Recuperation de la liste des mouvements enregistres")
+    n = int.from_bytes(braccio.recv(1),"little") #recuperation du nombre de mouvements enregistres
     print("{} mouvement(s) disponible(s)".format(n))
     for k in range(n):
         mouvements.append(braccio.recv(256))
@@ -138,7 +138,7 @@ if not error:
     braccio.send(bytes(int_msg_list)) # Pause order
     #"""#debug
 
-#Création de mouvements
+#Creation de mouvements
 def creation_mouvement():
     global close
     fin_creation = False
@@ -151,7 +151,7 @@ def creation_mouvement():
     while not fin_creation and not close:
         #"""#debug
         if creation:
-            ## mise en forme du message à envoyer
+            ## mise en forme du message a envoyer
             msg_to_send = bytearray(b'\x02')
             msg_to_send.append(duree)
             nom_bytes = bytes(nom, 'ASCII')
@@ -162,7 +162,7 @@ def creation_mouvement():
             braccio.send(msg_to_send)
             data = braccio.recv(256)
             if data != b'recording':
-                msg = "Erreur : l'enregistrement n'a pas démarré, réessayez"
+                msg = "Erreur : l'enregistrement n'a pas demarre, reessayez"
                 creation = False
             else:
                 data = braccio.recv(256)
@@ -170,12 +170,12 @@ def creation_mouvement():
                     msg = "Erreur lors de l'enregistrement"
                     creation = False
                 else:
-                    msg = "Le mouvement \"" + nom + "\" a été créer avec succès"
+                    msg = "Le mouvement \"" + nom + "\" a ete creer avec succes"
                     mouvements.append(nom)
                     fin_creation = True
         #"""#debug
 
-        #On ignore les entrées lors de la création du mouvement   
+        #On ignore les entrees lors de la creation du mouvement   
         if not creation:
             for event in pygame.event.get():            
                 if event.type == pygame.QUIT:
@@ -187,7 +187,7 @@ def creation_mouvement():
                         if len(nom) == 0:
                             msg = "Veuillez entrer un nom pour votre nouveau mouvement"
                         else:
-                            msg = "Création en cours du mouvement \"" + nom + "\""
+                            msg = "Creation en cours du mouvement \"" + nom + "\""
                             creation = True
                     elif joystick.get_button(A_b):
                         if duree != 1:
@@ -213,11 +213,11 @@ def creation_mouvement():
         textPrint.tprint(screen, "Creation de mouvement")
         textPrint.tprint(screen, "")
         textPrint.tprint(screen, "Appuyez sur START pour confirmer le nom ou sur BACK pour annuler")
-        textPrint.tprint(screen, "utilisez B et A pour choisir la durée du mouvement")
+        textPrint.tprint(screen, "utilisez B et A pour choisir la duree du mouvement")
         textPrint.tprint(screen, "")
         textPrint.tprint(screen, "Entrez le nom du mouvement que vous voulez enregistrer :")
         textPrint.tprint(screen, nom + curseur)
-        textPrint.tprint(screen, "Durée : {}s".format(duree))
+        textPrint.tprint(screen, "Duree : {}s".format(duree))
         textPrint.tprint(screen, msg)
         
         pygame.display.flip()
@@ -239,8 +239,8 @@ def pilotage():
         screen.fill(WHITE)
         textPrint.reset()
         textPrint.tprint(screen, "Pilotage en cours")
-        textPrint.tprint(screen, "Sélectionnez un mouvement avec LB et RB, exécutez-le avec stick_L + stick_R")
-        textPrint.tprint(screen, "retour avec BACK, (dés)activez le controle via les oeufs avec RT + LT")
+        textPrint.tprint(screen, "Selectionnez un mouvement avec LB et RB, executez-le avec stick_L + stick_R")
+        textPrint.tprint(screen, "retour avec BACK, (des)activez le controle via les oeufs avec RT + LT")
         textPrint.tprint(screen, "")
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -308,13 +308,13 @@ def pilotage():
         
         textPrint.tprint(screen, "")
         if controlOeuf == uint8(0) :
-            textPrint.tprint(screen, "Oeufs : désactivés")
+            textPrint.tprint(screen, "Oeufs : desactives")
         else :
-            textPrint.tprint(screen, "Oeufs : activés")
+            textPrint.tprint(screen, "Oeufs : actives")
         textPrint.tprint(screen, "")
         
-        #Affichage des mouvement préenregistrés
-        textPrint.tprint(screen, "Liste des mouvements enregistrés :")
+        #Affichage des mouvement preenregistres
+        textPrint.tprint(screen, "Liste des mouvements enregistres :")
         textPrint.indent()
         if len(mouvements) != 0:            
             for k in range(0,len(mouvements)):
@@ -328,7 +328,7 @@ def pilotage():
                 else :
                     textPrint.tprint(screen, mouvements[k])
         else :
-            textPrint.tprint(screen, "Vous n'avez enregistré aucun mouvements.")
+            textPrint.tprint(screen, "Vous n'avez enregistre aucun mouvements.")
             textPrint.tprint(screen, "Utilisez \"Enregistrer un mouvement\"")
 
         #Envoie des controles
@@ -387,7 +387,7 @@ while not error and not close:
 
     textPrint.tprint(screen, "Menu Principal")
     textPrint.tprint(screen, "")
-    textPrint.tprint(screen, "Sélectionnez une action avec LB et RB, vaidez avec START")
+    textPrint.tprint(screen, "Selectionnez une action avec LB et RB, vaidez avec START")
     textPrint.tprint(screen, "")
     for k in range(0,3):
         if selection == k:
@@ -417,7 +417,7 @@ braccio.close()
 
 screen.fill(WHITE)
 textPrint.reset()
-textPrint.tprint(screen, "Braccio éteint")
+textPrint.tprint(screen, "Braccio eteint")
 pygame.display.flip()
 
 sleep(1)
