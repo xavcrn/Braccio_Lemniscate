@@ -38,12 +38,20 @@ void loop(){
   } else {
     digitalWrite(leftDirection, LOW);
   }
-  analogWrite(leftSpeed, buf[1]);
+  if(buf[1]){
+    analogWrite(leftSpeed, buf[1]*(255-90)/255 + 90); // correction car couple au démarrage trop faible sinon
+  } else {
+    analogWrite(leftSpeed, 0);
+  }
   
   if(buf[2]){
     digitalWrite(rightDirection, HIGH);
   } else {
     digitalWrite(rightDirection, LOW);
   }
-  analogWrite(rightSpeed, buf[3]);
+  if(buf[3]){
+    analogWrite(rightSpeed, buf[3]*(255-90)/255 + 90); // correction car couple au démarrage trop faible sinon
+  } else {
+    analogWrite(rightSpeed, 0);
+  }
 }
