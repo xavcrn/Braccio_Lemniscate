@@ -22,6 +22,7 @@ using namespace std;
 
 //#define DEBUG1
 //#define DEBUG2
+//#define DEBUG3
 
 bool Sequence = false;
 int client_sd;
@@ -61,7 +62,7 @@ class Braccio_robot{
 };
 
 Braccio_robot::~Braccio_robot(){
-    close(serial_port);
+    sleep();  
 }
 
 void Braccio_robot::sleep(){
@@ -77,6 +78,7 @@ void Braccio_robot::sleep(){
     player_pub->publish(dodo);
     
     while(Sequence){
+        // Read the data received by the subscribers
         ros::spinOnce();
     }
     ROS_INFO("remote_server : Braccio is sleeping");
@@ -114,9 +116,9 @@ int Braccio_robot::init(){
         player_pub->publish(msg);
         #ifdef DEBUG2
         ROS_INFO("remote_server : Publish : \"%s\"   Waiting for answer",msg.data.c_str());
-        ROS_INFO("remote_server : spinOnce");
         #endif
-                
+        
+        ROS_INFO("remote_server : spinOnce");
         // Attendre la terminaison du mouvement
         while(Sequence){
             ros::spinOnce();
@@ -179,16 +181,13 @@ int Braccio_robot::pilotage(char commande[]){
         write(client_sd, msg.data(), msg.length());
     }
 
-    // Envoie du message seulement sur front
-    static std_msgs::Bool controlOeuf;
-    if(commande[5] && !controlOeuf.data){
+    std_msgs::Bool controlOeuf;
+    if(commande[5]){
         controlOeuf.data = true;
-        egg_control->publish(controlOeuf);
-    } else if(!commande[5] && controlOeuf.data){
+    } else {
         controlOeuf.data = false;
-        egg_control->publish(controlOeuf);
     }
-    
+    egg_control->publish(controlOeuf);
 
     // Commandes de séquences
     if(run == true){
@@ -354,8 +353,7 @@ int main(int argc, char* argv[]){
                         braccio_robot.creation(recep);
                         break;
                     case 3 : // fin
-                        ROS_INFO("remote_server : Connection closed by client.");
-                        braccio_robot.sleep();
+                        ROS_INFO("remote_server : Connection closed by client. Braccio is going to sleep.");
                         run = false;
                         break;
                     default :

@@ -75,7 +75,7 @@ else :
 			angles.m2 = int(resize(sX[1], 240, 510, -120, 120))
 			angles.m3 = int(resize(sY[1], 240, 510, -100, 100))
 			angles.m4 = int(resize(sX[2], 240, 510, -180, 180))
-			angles.m5 = int(resize(sY[2], 240, 510,   0,  90))
+			angles.m5 = int(resize(sY[2], 240, 510,  -90,   0))
 			
 			#print(int(sX[0]),int(sY[0]),int(sX[1]),int(sY[1]),int(sX[2]),int(sY[2]))
 
