@@ -2,33 +2,32 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
 
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
 
-#include "../../rf24libs/RF24/RF24.h"
-#include "../../rf24libs/RF24Network/RF24Network.h"
-#include "../../rf24libs/RF24/nRF24L01.h"
+#include "RF24/RF24.h"
+#include "RF24Network/RF24Network.h"
+#include "RF24/nRF24L01.h"
     
 using namespace std;
 
 #define PIPE_TRANSFER "/home/poppy/catkin_ws/src/braccio/receiver/temp/transferToPython"
 
 struct data {
-    short ID;
-    short x;
-    short y;
-    short mode;
-    short action;
-    short file;
+    uint8_t ID;
+    uint8_t x;
+    uint8_t y;
+    uint8_t z;
 } receivedData;
 
 
 int main(int argc, char const *argv[]){
-		cout << "Compilation date : " << __DATE__ << endl;
-		cout << "Compilation hour : " << __TIME__ << endl;
+		cout << "receive_from_egg : Compilation date : " << __DATE__ << endl;
+		cout << "receive_from_egg : Compilation hour : " << __TIME__ << endl;
     RF24 radio(25,0);
     RF24Network network(radio);
     const uint16_t motherNode = 00;
@@ -37,25 +36,17 @@ int main(int argc, char const *argv[]){
     //inits radio
     radio.begin();
     radio.startListening();
-    radio.printDetails();
     network.begin(108, myNode);
- 
-    //cout << "Debut radio " << endl; 
- 		
-/*
-    if(mkfifo(PIPE_TRANSFER, S_IRUSR | S_IWUSR)== -1){
-				cout << "pipe creation failed" << endl;
-				exit(-1);
-		}
+    sleep(1);
 
-    cout << "pipe initialized" << endl;
-*/
-		cout << "opening pipe file" << endl;
+    #ifndef DEBUG
     int fd = open(PIPE_TRANSFER, O_WRONLY);
+		cout << "receive_from_egg : Pipe opened for writing" << endl;
+    char buff[4];
+    #endif
+    
+    
 
-		cout << "pipe opened" << endl;
-
-    char buff[10];
     while(true){
 				network.update();
 
@@ -63,20 +54,89 @@ int main(int argc, char const *argv[]){
             RF24NetworkHeader nHeader;
             
             network.read(nHeader, &receivedData, sizeof(receivedData));
+
+            #ifdef DEBUG
+            printf("receive_from_egg : received : ID = %d, x = %3d, y = %3d, z = %3d\n",receivedData.ID,receivedData.x,receivedData.y,receivedData.z);
+            #endif
+
+            // Can't send negative data directly due to an incompatibilty between negative format on ardino and raspberry pi
+            int x = receivedData.x - 128;
+            int y = receivedData.y - 128;
+            int z = receivedData.z - 128;
+
+            // Compute the x and y angle from the x, y and z component
+            float OAx = sqrt(y*y+z*z);            
+            float sina = z/OAx;
+            float cosa = y/OAx;
+            float ax; // x angle (rad)
+            // Determine the angle
+            // Use the mean value between the one from the cosinus and the one from the sinus
+            if(cosa >= 0){
+              if(sina >=0){
+                ax = (asin(sina) + acos(cosa))/2;
+              } else {
+                ax = (asin(sina) - acos(cosa))/2;
+              }
+            } else {
+              if(sina >=0){
+                ax = (M_PI - asin(sina) + acos(cosa))/2;
+              } else {
+                ax = (asin(-sina) + acos(-cosa))/2 - M_PI;
+              }
+            }
+            float OAy = sqrt(x*x+z*z);
+            float ay;
+            sina = z/OAy;
+            cosa = x/OAy;
+            if(cosa >= 0){
+              if(sina >=0){
+                ay = (asin(sina) + acos(cosa))/2;
+              } else {
+                ay = (asin(sina) - acos(cosa))/2;
+              }
+            } else {
+              if(sina >=0){
+                ay = (M_PI - asin(sina) + acos(cosa))/2;
+                //cout << "a = " << asin(sina)*180/M_PI << endl << "a = " << acos(cosa)*180/M_PI << endl;
+              } else {
+                ay = (-asin(sina) + acos(cosa))/2 - M_PI;
+              }
+            }
+            int16_t axd = ax*180/M_PI + 90; // x angle (°)
+            int16_t ayd = ay*180/M_PI + 90;
+
+            if(axd < 0){
+              axd += 360;
+            } else if (axd > 360){
+              axd -= 180;
+            }
+            if(ayd < 0){
+              ayd += 360;
+            } else if (ayd > 360){
+              ayd -= 180;
+            }
+
+            #ifdef DEBUG
+            printf("x = %4d°   y = %4d°\n",axd, ayd);
+            #else            
+            snprintf(buff, 4, "%d", (int16_t)receivedData.ID);
+            write(fd, buff, 1);
             
-            snprintf(buff, 10, "%d", receivedData.ID);
+            snprintf(buff, 4, "%d", axd);
             write(fd, buff, 2);
+
+            snprintf(buff, 4, "%d", ayd);
+            write(fd, buff, 2);
+            #endif
+
+            #ifdef VERBOSE
+            cout << "ID:" << (int16_t)receivedData.ID << " x:" << axd << " y:" << ayd << endl;
+            #endif
             
-            snprintf(buff, 10, "%d", receivedData.x);
-            write(fd, buff, 4);
-            
-            snprintf(buff, 10, "%d", receivedData.y);
-            write(fd, buff, 4);
-						
-						//cout << "ID : " << receivedData.ID << " X : " << receivedData.x << " Y : " << receivedData.y << endl;
    	    }
     }  
-    
+    #ifndef DEBUG
     close(fd);
+    #endif
     return 0;
 }
