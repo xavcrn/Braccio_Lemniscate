@@ -15,7 +15,7 @@
     
 using namespace std;
 
-#define PIPE_TRANSFER "/home/poppy/catkin_ws/src/braccio/receiver/temp/transferToPython"
+#define PIPE_TRANSFER "/home/poppy/catkin_ws/src/braccio/receiver/angles.pipe"
 
 struct data {
     uint8_t ID;
@@ -42,7 +42,7 @@ int main(int argc, char const *argv[]){
     #ifndef DEBUG
     int fd = open(PIPE_TRANSFER, O_WRONLY);
 		cout << "receive_from_egg : Pipe opened for writing" << endl;
-    char buff[4];
+    char buff[5];
     #endif
     
     
@@ -59,7 +59,6 @@ int main(int argc, char const *argv[]){
             printf("receive_from_egg : received : ID = %d, x = %3d, y = %3d, z = %3d\n",receivedData.ID,receivedData.x,receivedData.y,receivedData.z);
             #endif
 
-            // Can't send negative data directly due to an incompatibilty between negative format on ardino and raspberry pi
             int x = receivedData.x - 128;
             int y = receivedData.y - 128;
             int z = receivedData.z - 128;
@@ -102,31 +101,36 @@ int main(int argc, char const *argv[]){
                 ay = (-asin(sina) + acos(cosa))/2 - M_PI;
               }
             }
-            int16_t axd = ax*180/M_PI + 90; // x angle (°)
-            int16_t ayd = ay*180/M_PI + 90;
+            int16_t axd = ax*180/M_PI - 90; // x angle (°)
+            int16_t ayd = ay*180/M_PI - 90;
 
-            if(axd < 0){
+            if(axd < -180){
               axd += 360;
-            } else if (axd > 360){
-              axd -= 180;
+            } else if (axd > 180){
+              axd -= 360;
             }
-            if(ayd < 0){
+            if(ayd < -180){
               ayd += 360;
-            } else if (ayd > 360){
-              ayd -= 180;
+            } else if (ayd > 180){
+              ayd -= 360;
             }
 
             #ifdef DEBUG
             printf("x = %4d°   y = %4d°\n",axd, ayd);
-            #else            
-            snprintf(buff, 4, "%d", (int16_t)receivedData.ID);
-            write(fd, buff, 1);
+            #else         
+            /*  
+            snprintf(buff, 5, "%d", (int16_t)receivedData.ID);
+            write(fd, buff, 2);
             
-            snprintf(buff, 4, "%d", axd);
-            write(fd, buff, 2);
+            snprintf(buff, 5, "%d", axd);
+            write(fd, buff, 4);
 
-            snprintf(buff, 4, "%d", ayd);
-            write(fd, buff, 2);
+            snprintf(buff, 5, "%d", ayd);
+            write(fd, buff, 4);
+            */
+            write(fd,&(receivedData.ID),sizeof(receivedData.ID));
+            write(fd,&axd,sizeof(axd));
+            write(fd,&ayd,sizeof(ayd));
             #endif
 
             #ifdef VERBOSE
