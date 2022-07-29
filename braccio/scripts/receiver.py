@@ -34,13 +34,15 @@ else :
 
 	lastTime = rospy.get_rostime().nsecs
 
+	angles.m0 = 0
 	rate = rospy.Rate(20)
 
-	"""
-	for m in angles:
-		m = 0
-	pub.publish(angles)
-	"""
+ 	
+	angles.m1 = 0
+	angles.m2 = 0
+	angles.m3 = 0
+	angles.m4 = 0
+	angles.m5 = 0
 
 	sX = [0,0,0]
 	sY = [0,0,0]
@@ -56,21 +58,21 @@ else :
 			Y  = int(os.read(pipe,4)[0:3])
 			"""
 			ID = int.from_bytes(os.read(pipe,1),"little",signed=True)
-			X = int.from_bytes(os.read(pipe,2),"little",signed=True)
-			Y = int.from_bytes(os.read(pipe,2),"little",signed=True)
+			X  = int.from_bytes(os.read(pipe,2),"little",signed=True)
+			Y  = int.from_bytes(os.read(pipe,2),"little",signed=True)
 
 			rospy.loginfo("receiver : ID={}, X={}, Y={}".format(ID,X,Y))
-			if ID == 0:
+			if ID == 1:
 				sX[0] += X
 				sY[0] += Y
 				nX[0] += 1
 				nY[0] += 1
-			if ID == 1:
+			elif ID == 2:
 				sX[1] += X
 				sY[1] += Y			
 				nX[1] += 1
 				nY[1] += 1
-			if ID == 3:
+			elif ID == 3:
 				sX[2] += X
 				sY[2] += Y
 				nX[2] += 1
