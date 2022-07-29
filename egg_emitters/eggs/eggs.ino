@@ -3,44 +3,41 @@
 #include <RF24.h>
 #include <RF24Network.h>
 
-#define DEBUG
-
-/*
-      Number of emitter to change :
-      EMITTER 1 : 1 (base / shoudler)
-      EMITTER 2 : 2 (elbow / poignet ver)
-      EMITTER 3 : 3 (poignet rot / gripper)
-*/
-#define EMITTER 1
+// Choose the number of the emitter (between 0 and 5) (the ID is EMITTER+1)
+// /!\ When the ID is 2 (emitter=1), the ID is not well send (
+#define EMITTER 5
 
 #define targetedNode 0
 #define xPin A0
 #define yPin A1
 #define zPin A2
 
-#define x0 334
-#define y0 330
-#define z0 332
+// enable the DEBUG mode by uncommenting this line
+//#define DEBUG
+// You need to calibrate the emitter using the DEBUG mode
+int16_t x0[6]   = {344, 346, 346, 334, 340, 340};
+int16_t xmax[6] = {409, 412, 413, 401, 405, 405};
+int16_t xmin[6] = {274, 275, 264, 267, 270, 269};
 
-#define xmax 405
-#define ymax 404
-#define zmax 407
+int16_t y0[6]   = {330, 339, 333, 333, 338, 334};
+int16_t ymax[6] = {400, 410, 402, 402, 405, 404};
+int16_t ymin[6] = {264, 275, 275, 265, 268, 267};
 
-#define xmin 275
-#define ymin 268
-#define zmin 275
+int16_t z0[6]   = {344, 339, 341, 339, 336, 341};
+int16_t zmax[6] = {413, 413, 407, 407, 408, 408};
+int16_t zmin[6] = {277, 275, 275, 274, 275, 274};
 
 
 #define lengthFilter 16
 // frequency of the sending is of 1/PERIOD kHz
-#define PERIOD 100
+#define PERIOD 10
 
 
 struct eggData {
-  uint8_t id = EMITTER;
-  int8_t x;
-  int8_t y;
-  int8_t z;
+  uint8_t id = EMITTER + 1;
+  uint8_t x;
+  uint8_t y;
+  uint8_t z;
 }data;
 
 RF24 radio(9,10); //emission with Arduino Nano-rf
@@ -51,16 +48,20 @@ int Y[lengthFilter] = {0};
 int Z[lengthFilter] = {0};
 
 void setup() {
-  pinMode(xPin, INPUT);
-  pinMode(yPin, INPUT);  
-  radio.begin();
-  radio.stopListening();
-  network.begin(108, EMITTER);
-  delay(100);
-
   #ifdef DEBUG
   Serial.begin(115200);
   #endif  
+  pinMode(xPin, INPUT);
+  pinMode(yPin, INPUT);  
+  radio.begin();
+  delay(100);
+  radio.stopListening();
+  delay(100);
+  network.begin(108, EMITTER+1);  
+  delay(100); 
+  #ifdef DEBUG
+  Serial.println("setup done");
+  #endif 
 }
 
 void loop() {
@@ -81,24 +82,32 @@ void loop() {
     int mY = 0;
     int mZ = 0;
     for(int k = 0; k<lengthFilter; k++){
-      mX += constrain(X[k],xmin,xmax);
-      mY += constrain(Y[k],ymin,ymax);
-      mZ += constrain(Z[k],zmin,zmax);
+      mX += constrain(X[k],xmin[EMITTER],xmax[EMITTER]);
+      mY += constrain(Y[k],ymin[EMITTER],ymax[EMITTER]);
+      mZ += constrain(Z[k],zmin[EMITTER],zmax[EMITTER]);
     }
     mX /= lengthFilter;
     mY /= lengthFilter;
     mZ /= lengthFilter;
 
-    data.x = mX - x0; //map(mX-x0, xmin-x0, xmax-x0, 0, 255);
-    data.y = mY - y0; //map(mY-y0, ymin-y0, ymax-y0, 0, 255);
-    data.z = mZ - z0; //map(mZz0, zmin-z0, zmax-z0, 0, 255);
+    data.x = constrain(map(mX,xmin[EMITTER],x0[EMITTER],-128,0),-128,127) + 128;
+    data.y = constrain(map(mY,ymin[EMITTER],y0[EMITTER],-128,0),-128,127) + 128;
+    data.z = constrain(map(mZ,zmin[EMITTER],z0[EMITTER],-128,0),-128,127) + 128;
 
     #ifdef DEBUG
+    Serial.print("ID : ");
+    Serial.println(data.id);
     Serial.print("X : ");
+    Serial.print(analogRead(xPin));
+    Serial.print("  dX = ");
     Serial.println(data.x);
     Serial.print("Y : ");
+    Serial.print(analogRead(yPin));
+    Serial.print("  dY = ");
     Serial.println(data.y);
     Serial.print("Z : ");
+    Serial.print(analogRead(zPin));
+    Serial.print("  dZ = ");
     Serial.println(data.z);
     Serial.println("");
     #endif
