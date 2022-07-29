@@ -117,7 +117,6 @@ if not error:
     #"""#debug
 
     #recuperer la liste des mouvements pre-enregistres
-
     mouvements = []
     print("Recuperation de la liste des mouvements enregistres")
     n = int.from_bytes(braccio.recv(1),"little") #recuperation du nombre de mouvements enregistres
@@ -190,7 +189,7 @@ def creation_mouvement():
                         if duree != 1:
                             duree -=1
                     elif joystick.get_button(B_b):
-                        if duree != 10:
+                        if duree != 60:
                             duree += 1
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE:
@@ -198,6 +197,7 @@ def creation_mouvement():
                     else:
                         nom += event.unicode
 
+        # fait clignoter la barre
         cpt += 1
         if cpt == 16:
             curseur = ""
@@ -272,19 +272,19 @@ def pilotage():
         msgD = "Moteur droit  :"
 
         if joyR > 0:
-            sens_droit    = 1
+            sens_droit    = 0
             moteur_droit  = uint8(255*joyR)
             msgD += " -"
         else :
-            sens_droit    = 0
+            sens_droit    = 1
             moteur_droit  = uint8(-255*joyR)
             msgD += "  "
         if joyL > 0:
-            sens_gauche   = 1
+            sens_gauche   = 0
             moteur_gauche = uint8(255*joyL)
             msgG += " -"
         else :
-            sens_gauche   = 0
+            sens_gauche   = 1
             moteur_gauche = uint8(-255*joyL)
             msgG += "  "
 
