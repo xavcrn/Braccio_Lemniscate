@@ -28,6 +28,12 @@ struct data {
 int main(int argc, char const *argv[]){
 		cout << "receive_from_egg : Compilation date : " << __DATE__ << endl;
 		cout << "receive_from_egg : Compilation hour : " << __TIME__ << endl;
+		#ifdef DEBUG
+		cout << "receive_from_egg : Debug Mode" << endl;
+		#endif
+		#ifdef VERBOSE
+		cout << "receive_from_egg : Verbose Mode" << endl;
+		#endif
     RF24 radio(25,0);
     RF24Network network(radio);
     const uint16_t motherNode = 00;
