@@ -271,21 +271,21 @@ def pilotage():
         msgG = "Moteur gauche :" 
         msgD = "Moteur droit  :"
 
-        if joyR > 0:
+        if joyL > 0:
             sens_droit    = 0
-            moteur_droit  = uint8(255*joyR)
+            moteur_droit  = uint8(255*joyL)
             msgD += " -"
         else :
             sens_droit    = 1
-            moteur_droit  = uint8(-255*joyR)
+            moteur_droit  = uint8(-255*joyL)
             msgD += "  "
-        if joyL > 0:
+        if joyR > 0:
             sens_gauche   = 0
-            moteur_gauche = uint8(255*joyL)
+            moteur_gauche = uint8(255*joyR)
             msgG += " -"
         else :
             sens_gauche   = 1
-            moteur_gauche = uint8(-255*joyL)
+            moteur_gauche = uint8(-255*joyR)
             msgG += "  "
 
         if moteur_droit  < 15:
