@@ -12,7 +12,7 @@
 #include "RF24/RF24.h"
 #include "RF24Network/RF24Network.h"
 #include "RF24/nRF24L01.h"
-    
+
 using namespace std;
 
 #define PIPE_TRANSFER "/home/poppy/catkin_ws/src/braccio/receiver/angles.pipe"
@@ -22,6 +22,7 @@ struct data {
     uint8_t x;
     uint8_t y;
     uint8_t z;
+		//uint8_t ID;
 } receivedData;
 
 
@@ -34,13 +35,14 @@ int main(int argc, char const *argv[]){
 		#ifdef VERBOSE
 		cout << "receive_from_egg : Verbose Mode" << endl;
 		#endif
-    RF24 radio(25,0);
+    RF24 radio(25,0,250000);
     RF24Network network(radio);
     const uint16_t motherNode = 00;
     const uint16_t myNode = motherNode;
-   
+
     //inits radio
     radio.begin();
+		sleep(1);
     radio.startListening();
     network.begin(108, myNode);
     sleep(1);
@@ -49,6 +51,8 @@ int main(int argc, char const *argv[]){
     int fd = open(PIPE_TRANSFER, O_WRONLY);
 		cout << "receive_from_egg : Pipe opened for writing" << endl;
     char buff[5];
+		#else
+		cout << "loop starting" << endl;
     #endif
     
     
