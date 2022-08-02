@@ -13,10 +13,10 @@
 
 #include "ros/ros.h"
 #include "braccio/egg_angles.h"
-    
+
 using namespace std;
 
-#define PIPE_TRANSFER "/home/poppy/catkin_ws/src/braccio/receiver/temp/transferToPython"
+#define PIPE_TRANSFER "/home/poppy/catkin_ws/src/braccio/receiver/angles.pipe"
 #define DELAY 50000000
 
 int resize(int x, int min, int max);
@@ -29,106 +29,86 @@ int main(int argc, char* argv[]){
     }
     ros::init(argc, argv, "egg_receiver");
     ros::NodeHandle n;
-    ros::Publisher pub = n.advertise<braccio::egg_angles>("eggs_angles",5);
-    char buff[10];
-    
-    ROS_INFO("Open pipe for reading");
+    ros::Publisher pub = n.advertise<braccio::egg_angles>("egg_angles",5);
+
+    ROS_INFO("egg_receiver : Open pipe for reading");
     int fd = open(PIPE_TRANSFER, O_RDONLY);
     if(fd == -1){
-        ROS_INFO("Pipe opening error");
+        ROS_INFO("egg_receiver : Pipe opening error");
         exit(-1);
     }
-    ROS_INFO("Pipe opened for reading");
+    ROS_INFO("egg_receiver : Pipe opened for reading");
 
+    /*
     int sX[3] = {0,0,0};
     int sY[3] = {0,0,0};
-    int nX[3] = {1,1,1};
-    int nY[3] = {1,1,1};
+    int nX[3] = {0,0,0};
+    int nY[3] = {0,0,0};
+    */
+
+    int S[6] = {0};
+    int N[6] = {0};
 
     braccio::egg_angles angles;
+
+    angles.m0 = 0;
+    angles.m1 = 0;
+    angles.m2 = 0;
+    angles.m3 = 0;
+    angles.m4 = 0;
+    angles.m5 = 0;
+
+    // Pointers are here used to make it iterable
+    int16_t* ANGLES[6] = {&(angles.m0),&(angles.m1),&(angles.m2),&(angles.m3),&(angles.m4),&(angles.m5)};
 
     int currentTime;
     int lastTime = ros::Time::now().toNSec();
 
-    int ID;
-    int X;
-    int Y;
+    int8_t ID;
+    int16_t X;
+    int16_t Y;
 
     while(ros::ok()){
-        read(fd,buff,10);
-        ID = (0xFF00 & (buff[0] <<  8)) | (0xFF & buff[1]);
-        X  = (0xFF000000 & (buff[2] << 24)) | (0xFF0000 & (buff[3] << 16)) | (0xFF00 & (buff[4] << 8)) | (0xFF & buff[5]);
-        X  = (0xFF000000 & (buff[6] << 24)) | (0xFF0000 & (buff[7] << 16)) | (0xFF00 & (buff[8] << 8)) | (0xFF & buff[9]);
-        
-        ROS_INFO("%c %c %c %c %c %c %c %c %c %c",buff[0],buff[1],buff[2],buff[3],buff[4],buff[5],buff[6],buff[7],buff[8],buff[9]);
-        ROS_INFO("ID=%d   x=%3d   y=%3d",ID,X,Y);
+        read(fd,&ID,1);
+        read(fd,&X,2);
+        read(fd,&Y,2);
 
-        switch(ID){
-            case 0:
-                sX[0] += X;
-                sY[0] += Y;
-    			nX[0]++;
-	    		nY[0]++;
-                break;
-            case 1:
-                sX[1] += X;
-                sY[1] += Y;
-    			nX[1]++;
-	    		nY[1]++;
-                break;
-            case 3:
-                sX[2] += X;
-                sY[2] += Y;
-    			nX[2]++;
-	    		nY[2]++;
-                break;
-            default: 
-                break;
-        }
+        //ROS_INFO("egg_receiver :ID=%d   x=%3d   y=%3d",ID,X,Y);
         
+        S[2*(ID-1)]   += X;
+        S[2*(ID-1)+1] += Y;
+        N[2*(ID-1)]++;
+        N[2*(ID-1)+1]++;
+
         currentTime = ros::Time::now().toNSec();
         if(currentTime < lastTime){
             lastTime = currentTime;
         }
         if(currentTime - lastTime > DELAY){
             lastTime += DELAY;
-
-            for(int k = 0; k<3; k++){
-                sX[k] = sX[k]/nX[k];
-                sY[k] = sY[k]/nX[k];
-                nX[k] = 1;
-                nY[k] = 1;
+            for(int k = 0; k<6; k++){
+                if(N[k]){
+                    *(ANGLES[k]) = S[k]/N[k];
+                }
+                N[k] = 0;
+                S[k] = 0;
             }
-
-            angles.m0 = resize(sX[0], -180, 180);
-			angles.m1 = resize(sY[0], -120, 120);
-			angles.m2 = resize(sX[1], -120, 120);
-			angles.m3 = resize(sY[1], -100, 100);
-			angles.m4 = resize(sX[2], -180, 180);
-			angles.m5 = resize(sY[2],  -90,   0);
-
             pub.publish(angles);
 
-            ROS_INFO("angles : %4d %4d %4d %4d %4d %4d",angles.m0,angles.m1,angles.m2,angles.m3,angles.m4,angles.m5);
-        }       
+            //ROS_INFO("egg_receiver : %4d %4d %4d %4d %4d %4d",angles.m0,angles.m1,angles.m2,angles.m3,angles.m4,angles.m5);
+        }
     }
 
     char cmd[256];
-    ROS_INFO("shutdown receive");
+    ROS_INFO("egg_receiver : shutdown receive");
     sprintf(cmd,"sudo kill -9 %d",receiver_PID);
     system(cmd);
-    ROS_INFO("receive shutdown");
+    ROS_INFO("egg_receiver : receive shutdown");
     return 0;
 }
 
 int resize(int x, int min, int max){
-    if(x < 255){
-        x = 255;
-    } else if(x > 512){
-        x = 512;
-    }
-    int a = (max - min) / 255;
-    int b = min - a * 255;
-    
-    return a*x + b;
+    float a = (max - min) / 360;
+    float b = min + a * 180;
+    return (int)(a*x + b);
 }
