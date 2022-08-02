@@ -19,7 +19,7 @@ using namespace std;
 #define PIPE_TRANSFER "/home/poppy/catkin_ws/src/braccio/receiver/angles.pipe"
 #define DELAY 50000000
 
-int resize(int x, int min, int max);
+int16_t resize(int S, int N, int min, int max);
 
 int main(int argc, char* argv[]){
     int receiver_PID = fork();
@@ -39,11 +39,17 @@ int main(int argc, char* argv[]){
     }
     ROS_INFO("egg_receiver : Pipe opened for reading");
 
+    int8_t ID;
+    int16_t A;
+    
     int S[6] = {0};
     int N[6] = {0};
 
-    braccio::egg_angles angles;
+    // Limits angles of the robot
+    int Amin[6] = {-180,-130,-120,-100,-180, 0};
+    int Amax[6] = { 180, 130, 120, 100, 180,90};
 
+    braccio::egg_angles angles;
     angles.m0 = 0;
     angles.m1 = 0;
     angles.m2 = 0;
@@ -56,13 +62,6 @@ int main(int argc, char* argv[]){
 
     int currentTime;
     int lastTime = ros::Time::now().toNSec();
-
-    int8_t ID;
-    int16_t A;
-
-    // Limits angles of the robot
-    int Amin[6] = {-180,-130,-120,-100,-180, 0};
-    int Amax[6] = { 180, 130, 120, 100, 180,90};
 
     while(ros::ok()){
         read(fd,&ID,1);
@@ -79,16 +78,19 @@ int main(int argc, char* argv[]){
         }
         if(currentTime - lastTime > DELAY){
             lastTime += DELAY;
+
+            //ROS_INFO("egg_receiver : S={%4d,%4d,%4d,%4d,%4d,%4d} N={%d,%d,%d,%d,%d,%d}",S[0],S[1],S[2],S[3],S[4],S[5],N[0],N[1],N[2],N[3],N[4],N[5]);
+
             for(int k = 0; k<6; k++){
                 if(N[k]){
-                    *(ANGLES[k]) = resize(S[k]/N[k],Amin[k],Amax[k]);
+                    *(ANGLES[k]) = resize(S[k],N[k],Amin[k],Amax[k]);
                 }
                 N[k] = 0;
                 S[k] = 0;
             }
             pub.publish(angles);
 
-            //ROS_INFO("egg_receiver : %4d %4d %4d %4d %4d %4d",angles.m0,angles.m1,angles.m2,angles.m3,angles.m4,angles.m5);
+            ROS_INFO("egg_receiver : %4d %4d %4d %4d %4d %4d",angles.m0,angles.m1,angles.m2,angles.m3,angles.m4,angles.m5);
         }
     }
 
@@ -100,8 +102,6 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
-int resize(int x, int min, int max){
-    float a = (max - min) / 360;
-    float b = min + a * 180;
-    return (int)(a*x + b);
+inline int16_t resize(int S, int N, int min, int max){
+    return ((max-min)*S)/(360*N) + (min+max)/2;
 }
