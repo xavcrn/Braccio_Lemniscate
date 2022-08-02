@@ -22,7 +22,6 @@ struct data {
     uint8_t x;
     uint8_t y;
     uint8_t z;
-		//uint8_t ID;
 } receivedData;
 
 
@@ -93,6 +92,14 @@ int main(int argc, char const *argv[]){
                 ax = (asin(-sina) + acos(-cosa))/2 - M_PI;
               }
             }
+            int16_t axd = ax*180/M_PI - 90; // x angle (°)
+            if(axd < -180){
+              axd += 360;
+            } else if (axd > 180){
+              axd -= 360;
+            }
+
+            #ifndef SIX_EGGS
             float OAy = sqrt(x*x+z*z);
             float ay;
             sina = z/OAy;
@@ -106,45 +113,34 @@ int main(int argc, char const *argv[]){
             } else {
               if(sina >=0){
                 ay = (M_PI - asin(sina) + acos(cosa))/2;
-                //cout << "a = " << asin(sina)*180/M_PI << endl << "a = " << acos(cosa)*180/M_PI << endl;
               } else {
                 ay = (-asin(sina) + acos(cosa))/2 - M_PI;
               }
             }
-            int16_t axd = ax*180/M_PI - 90; // x angle (°)
             int16_t ayd = ay*180/M_PI - 90;
-
-            if(axd < -180){
-              axd += 360;
-            } else if (axd > 180){
-              axd -= 360;
-            }
             if(ayd < -180){
               ayd += 360;
             } else if (ayd > 180){
               ayd -= 360;
             }
+            #endif
 
             #ifdef DEBUG
             printf("x = %4d°   y = %4d°\n",axd, ayd);
-            #else         
-            /*  
-            snprintf(buff, 5, "%d", (int16_t)receivedData.ID);
-            write(fd, buff, 2);
-            
-            snprintf(buff, 5, "%d", axd);
-            write(fd, buff, 4);
-
-            snprintf(buff, 5, "%d", ayd);
-            write(fd, buff, 4);
-            */
+            #else
             write(fd,&(receivedData.ID),sizeof(receivedData.ID));
             write(fd,&axd,sizeof(axd));
+            #ifndef SIX_EGGS
             write(fd,&ayd,sizeof(ayd));
+            #endif
             #endif
 
             #ifdef VERBOSE
-            cout << "ID:" << (int16_t)receivedData.ID << " x:" << axd << " y:" << ayd << endl;
+            cout << "ID:" << receivedData.ID << " x:" << axd;
+            #ifndef SIX_EGGS
+            cout << " y:" << ayd;
+            #endif
+            cout << endl;
             #endif
             
    	    }

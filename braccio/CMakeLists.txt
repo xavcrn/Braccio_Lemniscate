@@ -56,6 +56,9 @@ target_link_libraries(remote_server ${catkin_LIBRARIES})
 add_executable(egg_receive src/egg_receive.cpp)
 target_link_libraries(egg_receive ${catkin_LIBRARIES})
 
+add_executable(egg_receive6 src/egg_receive6.cpp)
+target_link_libraries(egg_receive6 ${catkin_LIBRARIES})
+
 catkin_install_python(PROGRAMS scripts/receiver.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
