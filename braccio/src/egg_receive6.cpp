@@ -24,7 +24,7 @@ int resize(int x, int min, int max);
 int main(int argc, char* argv[]){
     int receiver_PID = fork();
     if(receiver_PID == 0){
-        int buf = system("sudo /home/poppy/catkin_ws/src/braccio/receiver/receive");
+        int buf = system("sudo /home/poppy/catkin_ws/src/braccio/receiver/receive6");
         return 0;
     }
     ros::init(argc, argv, "egg_receiver");
