@@ -39,13 +39,6 @@ int main(int argc, char* argv[]){
     }
     ROS_INFO("egg_receiver : Pipe opened for reading");
 
-    /*
-    int sX[3] = {0,0,0};
-    int sY[3] = {0,0,0};
-    int nX[3] = {0,0,0};
-    int nY[3] = {0,0,0};
-    */
-
     int S[6] = {0};
     int N[6] = {0};
 
@@ -68,6 +61,10 @@ int main(int argc, char* argv[]){
     int16_t X;
     int16_t Y;
 
+    // Limits angles of the robot
+    int Amin[6] = {-180,-130,-120,-100,-180, 0};
+    int Amax[6] = { 180, 130, 120, 100, 180,90};
+
     while(ros::ok()){
         read(fd,&ID,1);
         read(fd,&X,2);
@@ -88,7 +85,7 @@ int main(int argc, char* argv[]){
             lastTime += DELAY;
             for(int k = 0; k<6; k++){
                 if(N[k]){
-                    *(ANGLES[k]) = S[k]/N[k];
+                    *(ANGLES[k]) = resize(S[k]/N[k],Amin[k],Amax[k]);
                 }
                 N[k] = 0;
                 S[k] = 0;
