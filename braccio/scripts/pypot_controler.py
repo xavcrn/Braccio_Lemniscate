@@ -4,7 +4,6 @@ from pypot.robot import from_json
 from time import sleep
 
 from braccio.msg import egg_angles
-from braccio.srv import creation, creationResponse
 from std_msgs.msg import Bool, String
 from pypot.primitive.move import MoveRecorder, Move, MovePlayer
 
@@ -20,6 +19,8 @@ reach_initial_speed = [50,50,50,50,50,50]
 # Disable egg_control by default
 egg_enable = False
 egg_position = [0,0,0,0,0,0,0]
+# Disable recording
+recording = False
 
 # Load braccio.json configuration
 braccio = from_json("/home/poppy/catkin_ws/src/braccio/pypot_ressources/braccio.json")
@@ -52,18 +53,19 @@ def go_sleep():
     sleep(0.1)
     braccio.compliant = True
 
-def record(request):
-    rospy.loginfo("pypot_controler : Recording movement \"{}\"".format(request.move_name))
+def record(move):
+    rospy.loginfo("pypot_controler : Recording movement \"{}\"".format(move))
     move_recorder = MoveRecorder(braccio, 50, braccio.motors)
     braccio.compliant = True    
     move_recorder.start()
-    sleep(request.duration)
+    global recording
+    while recording:
+        sleep(0.05)
     move_recorder.stop()
     braccio.compliant = False
-    move_name = MOVE_PATH + request.move_name 
+    move_name = MOVE_PATH + move
     with open(move_name, 'w') as f:
         move_recorder.move.save(f)
-    return creationResponse(True)
 
 def play(move):
     # If want to go to initial position
@@ -121,13 +123,22 @@ def egg_set_position(egg_target):
     egg_position[4] = egg_target.m4
     egg_position[5] = egg_target.m5
 
+def record_ctrl(msg):
+    global recording
+    if msg.data == "STOP":
+        recording = False
+    elif recording == False:
+        recording = True
+        record(msg.data)
+
 # Initialize all subscribers
 rospy.Subscriber("egg_activation", Bool, egg_activation)
 rospy.Subscriber("play_move", String, play)
 rospy.Subscriber("egg_angles", egg_angles, egg_set_position)
+rospy.Subscriber("recording", String, record_ctrl)
 
 # Start creation service
-s = rospy.Service("create_move", creation, record)
+#s = rospy.Service("create_move", creation, record)
 
 rospy.loginfo("pypot_controler : Braccio arm Launched")
 

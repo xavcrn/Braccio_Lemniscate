@@ -13,8 +13,9 @@
 #define zPin A2
 
 // enable the DEBUG mode by uncommenting this line
-#define DEBUG
-// You need to calibrate the emitter using the DEBUG mode
+//#define DEBUG
+
+// these values were measured using DEBUG mode
 int16_t x0[6]   = {344, 346, 346, 334, 340, 340};
 int16_t xmax[6] = {409, 412, 413, 401, 405, 405};
 int16_t xmin[6] = {274, 275, 264, 267, 270, 269};
@@ -30,7 +31,7 @@ int16_t zmin[6] = {277, 275, 275, 274, 275, 274};
 
 #define lengthFilter 16
 // frequency of the sending is of 1/PERIOD kHz
-#define PERIOD 100
+#define PERIOD 10
 
 
 struct eggData {
@@ -63,6 +64,7 @@ void setup() {
   radio.begin();
   delay(200);
 #if EMITTER != 4
+  // Only the node 04 need to listen to another node
   radio.stopListening();
 #endif
   delay(200);
