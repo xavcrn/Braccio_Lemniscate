@@ -139,39 +139,11 @@ def creation_mouvement():
     global close
     fin_creation = False
     nom = ""
-    duree = uint8(1)
     creation = False
     msg = ""
     cpt = 0
     curseur = "|"
     while not fin_creation and not close:
-        #"""#debug
-        if creation:
-            ## mise en forme du message a envoyer
-            msg_to_send = bytearray(b'\x02')
-            msg_to_send.append(duree)
-            nom_bytes = bytes(nom, 'ASCII')
-            for k in nom_bytes:
-                msg_to_send.append(k)
-            msg_to_send.append(0)
-            ##
-            braccio.send(msg_to_send)
-            data = braccio.recv(256)
-            if data != b'recording':
-                msg = "Erreur : l'enregistrement n'a pas demarre, reessayez"
-                creation = False
-            else:
-                data = braccio.recv(256)
-                if data != b'success':
-                    msg = "Erreur lors de l'enregistrement"
-                    creation = False
-                else:
-                    msg = "Le mouvement \"" + nom + "\" a ete creer avec succes"
-                    mouvements.append(nom)
-                    fin_creation = True
-        #"""#debug
-
-        #On ignore les entrees lors de la creation du mouvement   
         if not creation:
             for event in pygame.event.get():            
                 if event.type == pygame.QUIT:
@@ -183,19 +155,30 @@ def creation_mouvement():
                         if len(nom) == 0:
                             msg = "Veuillez entrer un nom pour votre nouveau mouvement"
                         else:
-                            msg = "Creation en cours du mouvement \"" + nom + "\""
                             creation = True
-                    elif joystick.get_button(A_b):
-                        if duree != 1:
-                            duree -=1
-                    elif joystick.get_button(B_b):
-                        if duree != 60:
-                            duree += 1
+                            msg_to_send = bytearray(b'\x02')
+                            msg_to_send.append(60)
+                            nom_bytes = bytes(nom, 'ASCII')
+                            for k in nom_bytes:
+                                msg_to_send.append(k)
+                            msg_to_send.append(0)
+                            braccio.send(msg_to_send)
+                            msg = "Creation en cours du mouvement \"" + nom + "\""
+                            
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE:
                         nom = nom[:-1]
                     else:
                         nom += event.unicode
+        else:
+            for event in pygame.event.get():
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if joystick.get_button(START) == 1:
+                        braccio.send(b'STOP')
+                        data = braccio.recv(256)
+                        fin_creation = True
+                        msg = "Le mouvement \"" + nom + "\" a ete creer avec succes"
+                        mouvements.append(nom)
 
         # fait clignoter la barre
         cpt += 1
@@ -209,16 +192,17 @@ def creation_mouvement():
         textPrint.reset()        
         textPrint.tprint(screen, "Creation de mouvement")
         textPrint.tprint(screen, "")
-        textPrint.tprint(screen, "Appuyez sur START pour confirmer le nom ou sur BACK pour annuler")
-        textPrint.tprint(screen, "utilisez B et A pour choisir la duree du mouvement")
+        textPrint.tprint(screen, "Appuyez sur START pour confirmer le nom et lancer l'enregistrement")
+        textPrint.tprint(screen, "Appuyez à nouveau sur START pour terminer le mouvement")
+        textPrint.tprint(screen, "Appuyez sur BACK pour quitter")
         textPrint.tprint(screen, "")
         textPrint.tprint(screen, "Entrez le nom du mouvement que vous voulez enregistrer :")
         textPrint.tprint(screen, nom + curseur)
-        textPrint.tprint(screen, "Duree : {}s".format(duree))
         textPrint.tprint(screen, msg)
         
         pygame.display.flip()
         clock.tick(FPS)
+    sleep(1)
 
 #Pilotage du robot
 def pilotage():
