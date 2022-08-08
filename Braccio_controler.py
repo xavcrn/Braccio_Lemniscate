@@ -56,7 +56,7 @@ pygame.init()
 
 screen = pygame.display.set_mode((800, 450))
 
-pygame.display.set_caption("Braccio conttroler")
+pygame.display.set_caption("Braccio controler")
 
 done  = False
 close = False
@@ -177,7 +177,7 @@ def creation_mouvement():
                         braccio.send(b'STOP')
                         data = braccio.recv(256)
                         fin_creation = True
-                        msg = "Le mouvement \"" + nom + "\" a ete creer avec succes"
+                        msg = "Le mouvement \"" + nom + "\" a ete cree avec succes"
                         mouvements.append(nom)
 
         # fait clignoter la barre
@@ -193,7 +193,7 @@ def creation_mouvement():
         textPrint.tprint(screen, "Creation de mouvement")
         textPrint.tprint(screen, "")
         textPrint.tprint(screen, "Appuyez sur START pour confirmer le nom et lancer l'enregistrement")
-        textPrint.tprint(screen, "Appuyez à nouveau sur START pour terminer le mouvement")
+        textPrint.tprint(screen, "Appuyez a nouveau sur START pour terminer le mouvement")
         textPrint.tprint(screen, "Appuyez sur BACK pour quitter")
         textPrint.tprint(screen, "")
         textPrint.tprint(screen, "Entrez le nom du mouvement que vous voulez enregistrer :")
@@ -368,7 +368,7 @@ while not error and not close:
 
     textPrint.tprint(screen, "Menu Principal")
     textPrint.tprint(screen, "")
-    textPrint.tprint(screen, "Selectionnez une action avec LB et RB, vaidez avec START")
+    textPrint.tprint(screen, "Selectionner une action avec LB et RB, valider avec START")
     textPrint.tprint(screen, "")
     for k in range(0,3):
         if selection == k:
