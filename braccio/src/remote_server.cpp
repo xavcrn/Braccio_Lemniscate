@@ -23,6 +23,7 @@ using namespace std;
 //#define DEBUG1
 //#define DEBUG2
 //#define DEBUG3
+#define DEBUG4
 
 bool Sequence = false;
 int client_sd;
@@ -44,8 +45,7 @@ void Free_sequence(std_msgs::Bool retour){
 class Braccio_robot{
     private:
         int serial_port; // port série controlant la base
-        char* serial_port_s;
-        ros::ServiceClient* createur_client;        
+        char* serial_port_s;       
         ros::Publisher* egg_control;
         ros::Publisher* player_pub;
         ros::Publisher* recording;
@@ -53,7 +53,7 @@ class Braccio_robot{
     public:
         vector<string> mouvements;
         int init();
-        Braccio_robot(char* _serial_port, ros::Publisher* pl_pub, ros::Publisher* egg_pub, ros::ServiceClient* srv_clt, ros::Publisher* _recording);
+        Braccio_robot(char* _serial_port, ros::Publisher* pl_pub, ros::Publisher* egg_pub, ros::Publisher* _recording);
         ~Braccio_robot();
         int pilotage(char commande[]);
         int creation(char commande[]);
@@ -89,9 +89,8 @@ int Braccio_robot::pause(){
     return pilotage(initialisation);
 }
 
-Braccio_robot::Braccio_robot(char* _serial_port, ros::Publisher* pl_pub, ros::Publisher* egg_pub, ros::ServiceClient* srv_clt, braccio::creation* srv_srv, ros::Publisher* recording){
+Braccio_robot::Braccio_robot(char* _serial_port, ros::Publisher* pl_pub, ros::Publisher* egg_pub, ros::Publisher* _recording){
     serial_port_s = _serial_port;
-    createur_client = srv_clt;
     player_pub = pl_pub;
     egg_control = egg_pub;
     recording = _recording;
@@ -117,9 +116,9 @@ int Braccio_robot::init(){
         player_pub->publish(msg);
         #ifdef DEBUG2
         ROS_INFO("remote_server : Publish : \"%s\"   Waiting for answer",msg.data.c_str());
-        #endif
-        
         ROS_INFO("remote_server : spinOnce");
+        #endif
+                
         // Attendre la terminaison du mouvement
         while(Sequence){
             ros::spinOnce();
@@ -147,24 +146,31 @@ int Braccio_robot::init(){
 int Braccio_robot::creation(char commande[]){
     ROS_INFO("remote_server : Creating a new movement named : \"%s\"",commande + 2);
     string new_move(commande + 2);
-    std_msgs::String rec(new_move);    
+    std_msgs::String rec;
+    rec.data = new_move.data();
     //Envoyer la commande à pypot de créer un nouveau mouvement 
-    static string recording("recording");
-    write(client_sd, recording.data(), recording.length());
+    static string recording_str("recording");
+    write(client_sd, recording_str.data(), recording_str.length());
     recording->publish(rec);
-    buf[10];
+    char buf[5];
     while(true){
-        read(client_sd, buf, 10);
-        if(strcmp(buf,"STOP") == 0){
+        read(client_sd, buf, 5);
+        if(buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'O' && buf[3] == 'P'){
             break;
         }
     }
+    #ifdef DEBUG4
+    cout << "\"STOP\" received from client" << endl;
+    #endif
     rec.data = "STOP";
     recording->publish(rec);
+    #ifdef DEBUG4
+    cout << "\"STOP\" sentS to pypot" << endl;
+    #endif
     string result("success");
     mouvements.push_back(new_move);
     write(client_sd, result.data(), result.length());
-    return success;
+    return 0;
 }
 
 int Braccio_robot::pilotage(char commande[]){
@@ -282,11 +288,10 @@ int main(int argc, char* argv[]){
     string off("turned_off");
     
     braccio::creation createur_serveur;
-    ros::ServiceClient createur_client = node.serviceClient<braccio::creation>("create_move");
     ros::Publisher player_pub          = node.advertise<std_msgs::String>("play_move", 5);
     ros::Subscriber player_sub         = node.subscribe("movement_playing", 5, Free_sequence);
     ros::Publisher egg_control         = node.advertise<std_msgs::Bool>("egg_activation", 5);
-    ros::Publisher recording           = node.advertise<std_msgs::String>("recording");
+    ros::Publisher recording           = node.advertise<std_msgs::String>("recording",5);
 
     bool end = false;
 
@@ -306,7 +311,7 @@ int main(int argc, char* argv[]){
         // Envoie un message pour indiquer le succès de la connexion
         write(client_sd, success.data(), success.length());
 
-        Braccio_robot braccio_robot(SERIAL_PORT, &player_pub, &egg_control, &createur_client, &createur_serveur);
+        Braccio_robot braccio_robot(SERIAL_PORT, &player_pub, &egg_control, &recording);
 
         ROS_INFO("remote_server : Initializing Braccio");
 
@@ -354,6 +359,9 @@ int main(int argc, char* argv[]){
                         break;
                     case 2 : // creation
                         braccio_robot.creation(recep);
+                        #ifdef DEBUG4
+                        cout << "creation finished" << endl;
+                        #endif
                         break;
                     case 3 : // fin
                         ROS_INFO("remote_server : Connection closed by client. Braccio is going to sleep.");

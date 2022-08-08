@@ -21,6 +21,7 @@ egg_enable = False
 egg_position = [0,0,0,0,0,0,0]
 # Disable recording
 recording = False
+move_to_record = ""
 
 # Load braccio.json configuration
 braccio = from_json("/home/poppy/catkin_ws/src/braccio/pypot_ressources/braccio.json")
@@ -34,7 +35,7 @@ def set_speeds(speeds):
 
 def wait_for_position():
     for m in braccio.arm:
-        while abs(m.goal_position - m.present_position) > 1:
+        while abs(m.goal_position - m.present_position) > 2:
             sleep(0.1)
 
 def initial():
@@ -125,11 +126,15 @@ def egg_set_position(egg_target):
 
 def record_ctrl(msg):
     global recording
+    global move_to_record
+    print(msg)
     if msg.data == "STOP":
+        print("msg = STOP")
         recording = False
     elif recording == False:
+        print("msg != STOP")
+        move_to_record = msg.data
         recording = True
-        record(msg.data)
 
 # Initialize all subscribers
 rospy.Subscriber("egg_activation", Bool, egg_activation)
@@ -146,7 +151,10 @@ rate = rospy.Rate(20)
 
 rospy.loginfo("pypot_controler : Enterring loop")
 while not rospy.is_shutdown():
-    if egg_enable:
+    if recording:
+        record(move_to_record)
+        print("move recorded")
+    elif egg_enable:
         set_speeds(egg_motor_speed)
         for k in range(6):
             braccio.motors[k].goal_position = egg_position[k]
