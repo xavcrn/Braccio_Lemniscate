@@ -25,14 +25,14 @@
             "offset": 0.0,
             "type": "MX-106",
             "id": 0,
-            "angle_limit": [ -180.0, 180.0],
+            "angle_limit": [ -270.0, 270.0],
             "orientation": "direct"
         },
         "m1": {
             "offset": -43.0,
             "type": "MX-106",
             "id": 1,
-            "angle_limit": [ -130.0, 130.0],
+            "angle_limit": [ -270.0, 270.0],
             "orientation": "direct"
         },
         "m2": {
@@ -46,14 +46,14 @@
             "offset": 0.0,
             "type": "MX-28AT",
             "id": 3,
-            "angle_limit": [ -100.0, 100.0],
+            "angle_limit": [ -270.0, 270.0],
             "orientation": "direct"
         },
         "m4": {
             "offset": 0.0,
             "type": "AX-18A",
             "id": 4,
-            "angle_limit": [ -180.0, 180.0],
+            "angle_limit": [ -270.0, 270.0],
             "orientation": "direct"
         },
         "m5": {
