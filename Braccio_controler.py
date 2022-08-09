@@ -6,6 +6,7 @@ from time import sleep
 #Definition des couleurs
 BLACK = pygame.Color('black')
 WHITE = pygame.Color('white')
+RED   = pygame.Color('red')
 
 #Definition des boutons
 R_joy_y = 3
@@ -220,8 +221,8 @@ def pilotage():
         screen.fill(WHITE)
         textPrint.reset()
         textPrint.tprint(screen, "Pilotage en cours")
-        textPrint.tprint(screen, "Selectionnez un mouvement avec LB et RB, executez-le avec stick_L + stick_R")
-        textPrint.tprint(screen, "retour avec BACK, (des)activez le controle via les oeufs avec RT + LT")
+        textPrint.tprint(screen, "Selectionnez un mouvement avec LB et RB, executez-le avec LT")
+        textPrint.tprint(screen, "retour avec BACK, (des)activez le controle via les oeufs avec RT")
         textPrint.tprint(screen, "")
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -229,13 +230,13 @@ def pilotage():
             elif event.type == pygame.JOYBUTTONDOWN:
                 if joystick.get_button(BACK) == 1:
                     fin_pilotage = True
-                elif joystick.get_button(RT) == 1 and joystick.get_button(LT) == 1 :
+                elif joystick.get_button(RT) == 1:
                     if controlOeuf == uint8(0):
                         controlOeuf = uint8(1)
                     else :
                         controlOeuf = uint8(0)
                 elif len(mouvements) != 0 and not jouer_mouvement:
-                    if controlOeuf == 0 and joystick.get_button(R_joy_b) == 1 and joystick.get_button(L_joy_b) == 1:
+                    if controlOeuf == 0 and joystick.get_button(LT) == 1:
                         jouer_mouvement = True
                         joueSequence = uint8(selection + 1)
                     elif joystick.get_button(LB) == 1:
