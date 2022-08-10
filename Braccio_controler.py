@@ -136,7 +136,7 @@ if not error:
     #"""#debug
 
 #Creation de mouvements
-def creation_mouvement():
+def creation_mouvement_bras():
     global close
     fin_creation = False
     nom = ""
@@ -191,7 +191,7 @@ def creation_mouvement():
 
         screen.fill(WHITE)
         textPrint.reset()        
-        textPrint.tprint(screen, "Creation de mouvement")
+        textPrint.tprint(screen, "Creation de mouvement du bras")
         textPrint.tprint(screen, "")
         textPrint.tprint(screen, "Appuyez sur START pour confirmer le nom et lancer l'enregistrement")
         textPrint.tprint(screen, "Appuyez a nouveau sur START pour terminer le mouvement")
@@ -230,13 +230,13 @@ def pilotage():
             elif event.type == pygame.JOYBUTTONDOWN:
                 if joystick.get_button(BACK) == 1:
                     fin_pilotage = True
-                elif joystick.get_button(RT) == 1:
+                elif joystick.get_button(RT) == 1 and not jouer_mouvement:
                     if controlOeuf == uint8(0):
                         controlOeuf = uint8(1)
                     else :
                         controlOeuf = uint8(0)
                 elif len(mouvements) != 0 and not jouer_mouvement:
-                    if controlOeuf == 0 and joystick.get_button(LT) == 1:
+                    if controlOeuf == 0 and joystick.get_button(START) == 1:
                         jouer_mouvement = True
                         joueSequence = uint8(selection + 1)
                     elif joystick.get_button(LB) == 1:
@@ -259,19 +259,19 @@ def pilotage():
         if joyL > 0:
             sens_droit    = 0
             moteur_droit  = uint8(255*joyL)
-            msgD += " -"
+            #msgD += " -"
         else :
             sens_droit    = 1
             moteur_droit  = uint8(-255*joyL)
-            msgD += "  "
+            #msgD += "  "
         if joyR > 0:
             sens_gauche   = 0
             moteur_gauche = uint8(255*joyR)
-            msgG += " -"
+            #msgG += " -"
         else :
             sens_gauche   = 1
             moteur_gauche = uint8(-255*joyR)
-            msgG += "  "
+            #msgG += "  "
 
         if moteur_droit  < 15:
             moteur_droit  = uint8(0)
@@ -282,13 +282,13 @@ def pilotage():
             moteur_droit  = uint8(0)
             moteur_gauche = uint8(0)
 
-        msgG += "{}".format(moteur_gauche)
-        msgD += "{}".format(moteur_droit)    
+        #msgG += "{}".format(moteur_gauche)
+        #msgD += "{}".format(moteur_droit)    
 
-        textPrint.tprint(screen, msgG)
-        textPrint.tprint(screen, msgD)
-        
-        textPrint.tprint(screen, "")
+        #textPrint.tprint(screen, msgG)
+        #textPrint.tprint(screen, msgD)        
+        #textPrint.tprint(screen, "")
+
         if controlOeuf == uint8(0) :
             textPrint.tprint(screen, "Oeufs : desactives")
         else :
@@ -331,7 +331,76 @@ def pilotage():
         #limits to 30 frames per second
         clock.tick(FPS)
 
+def creation_mouvement_base():
+    #setup
+    moteur_droit = uint8(0)
+    moteur_gauche = uint8(0)
+    moteur_droit  = uint8(0)
+    moteur_gauche = uint8(0)
+    sens_droit    = uint8(0)
+    sens_gauche   = uint8(0)
+    joueSequence  = uint8(0)
+    global close
+    record = False
+    nom = ""
+    curseur = "|"
+    cpt = 0
+    #attente d'activation de l'enregistrement
+    while not record:
+        for event in pygame.event.get():            
+            if event.type == pygame.QUIT:
+                close = True
+                return
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if joystick.get_button(BACK) == 1:
+                    return
+                elif joystick.get_button(START) == 1:
+                    record = True
+                        
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_BACKSPACE:
+                    nom = nom[:-1]
+                else:
+                    nom += event.unicode
+        
+        cpt += 1
+        if cpt == 16:
+            curseur = ""
+        elif cpt == 32:
+            curseur = "|"
+            cpt = 0
+        
+        screen.fill(WHITE)
+        textPrint.reset()
+        textPrint.tprint(screen, "Creation de deplacement de la base")
+        textPrint.tprint(screen, "")
+        textPrint.tprint(screen, "Entrez le nom du mouvement a enregistrer puis validez avec START (BACK pour annuler)")
+        textPrint.tprint(screen, nom + curseur)
 
+        pygame.display.flip()
+        clock.tick(FPS)
+
+    while record:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                close = True
+                return
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if joystick.get_button(START) == 1:
+                    record = False
+
+        screen.fill(WHITE)
+        textPrint.reset()
+        textPrint.tprint(screen, "Creation de deplacement de la base")
+        textPrint.tprint(screen, "")
+        textPrint.tprint(screen, "Enregistrement en cours de \"{}\"".format(nom))
+        textPrint.tprint(screen, "Appuyer sur START pour mettre fin a l'enregistrement")
+        textPrint.tprint(screen, "")
+        
+        pygame.display.flip()
+        clock.tick(FPS)
+
+# Menu principal
 while not error and not close:
     screen.fill(WHITE)
     textPrint.reset()
@@ -347,7 +416,13 @@ while not error and not close:
                     braccio.send(bytes(msg_to_send)) # Pause order
                     #"""#debug
                 elif selection == 1:
-                    creation_mouvement()
+                    creation_mouvement_bras()
+                    #"""#debug
+                    msg_to_send = [uint8(0),uint8(1),uint8(2),uint8(3)]
+                    braccio.send(bytes(msg_to_send)) # Pause order
+                    #"""#debug
+                elif selection == 3:
+                    creation_mouvement_base()
                     #"""#debug
                     msg_to_send = [uint8(0),uint8(1),uint8(2),uint8(3)]
                     braccio.send(bytes(msg_to_send)) # Pause order
