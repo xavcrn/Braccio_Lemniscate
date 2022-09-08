@@ -1,6 +1,7 @@
 from numpy import uint8, uint8
 import pygame
 import socket
+import os
 from time import sleep
 
 #Definition des couleurs
@@ -86,20 +87,63 @@ while not done:
         textPrint.tprint(screen, "Ne branchez qu'une seule manette")
     else:
         textPrint.tprint(screen, "Manette connectee")
-        textPrint.tprint(screen, "Connexion a Braccio..")
+        textPrint.tprint(screen, "Allumage de Braccio")
         done = True
     
     pygame.display.flip()
     clock.tick(FPS)
 joystick = pygame.joystick.Joystick(0)
 
+#Demarrage de Braccio
+atmpt = 0
+done = False
+while not done and not error:
+    msg = "Allumage de Braccio"
+    ans = os.system("ssh braccio \"sudo systemctl start Braccio.service\"")
+    if ans == 0:
+        done = True
+        msg = "Braccio allume"
+    else:
+        atmpt += 1
+        msg += "."
+        if atmpt == 30:
+            error = True
+            msg = "Impossible de demarrer Braccio. Verifiez que vous etes bien connectes sur le meme reseau que Braccio"
+    screen.fill(WHITE)
+    textPrint.reset()
+    textPrint.tprint(screen, msg)
+    pygame.display.flip()
+    clock.tick(0.5)
+
 #Connection a Braccio
 #"""#debug
+done = False
+atmpt = 0
 braccio = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-braccio.connect(("braccio.local", 4242))
+sleep(10)
+msg = "Connection a Braccio"
+while not error and not done:    
+    try:
+        braccio.connect(("braccio.local", 4242))
+    except (ConnectionRefusedError, OSError):
+        atmpt += 1
+        msg += "."
+        if atmpt == 30:
+            error = True
+            print("Impossible de se connecter a Braccio")
+            msg = "Connection impossible"
+    else:
+        msg += " reussie"
+        done = True
+    screen.fill(WHITE)
+    textPrint.reset()
+    textPrint.tprint(screen, msg)
+    pygame.display.flip()
+    clock.tick(1)
+
 data = braccio.recv(256)
 
-if data != b'success':
+if not error and data != b'success':
     print("Erreur de communication avec Braccio")
     print("Recu : <{}>".format(data))
     error = True
@@ -547,6 +591,7 @@ while not error and not close:
     
 #Extinction de Braccio
 #"""#debug
+"""
 while not error and data != b'turned_off':
     screen.fill(WHITE)
     textPrint.reset()
@@ -557,7 +602,14 @@ while not error and data != b'turned_off':
     data = braccio.recv(256)
 
 braccio.close()
+"""
 #"""#debug
+screen.fill(WHITE)
+textPrint.reset()
+textPrint.tprint(screen, "Extinction de Braccio...")
+pygame.display.flip()
+
+os.system("ssh braccio \"sudo systemctl stop Braccio.service\"")
 
 screen.fill(WHITE)
 textPrint.reset()
