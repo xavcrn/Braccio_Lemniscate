@@ -259,7 +259,7 @@ def creation_mouvement_bras():
                 return
         screen.fill(WHITE)
         textPrint.reset()
-        textPrint.tprint(screen, "Le mouvement \"{}\" a ete enregistre.")
+        textPrint.tprint(screen, "Le mouvement \"{}\" a ete enregistre.".format(nom))
         textPrint.tprint(screen, "il dure : {} secondes.".format(duree))
         pygame.display.flip()
         clock.tick(FPS)
