@@ -144,6 +144,7 @@ def creation_mouvement_bras():
     msg = ""
     cpt = 0
     curseur = "|"
+    duree = 0
     while not fin_creation and not close:
         if not creation:
             for event in pygame.event.get():            
@@ -203,7 +204,21 @@ def creation_mouvement_bras():
         
         pygame.display.flip()
         clock.tick(FPS)
-    sleep(1)
+
+    #Fin de l'enregistrement
+    while(True):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                close = True
+                return
+            elif event.type == pygame.JOYBUTTONDOWN:
+                return
+        screen.fill(WHITE)
+        textPrint.reset()
+        textPrint.tprint(screen, "Le mouvement \"{}\" a ete enregistre.")
+        textPrint.tprint(screen, "il dure : {} secondes.".format(duree))
+        pygame.display.flip()
+        clock.tick(FPS)
 
 #Pilotage du robot
 def pilotage():
@@ -236,7 +251,7 @@ def pilotage():
                     else :
                         controlOeuf = uint8(0)
                 elif len(mouvements) != 0 and not jouer_mouvement:
-                    if controlOeuf == 0 and joystick.get_button(START) == 1:
+                    if controlOeuf == 0 and (joystick.get_button(START) == 1 or joystick.get_button(LT) == 1) :
                         jouer_mouvement = True
                         joueSequence = uint8(selection + 1)
                     elif joystick.get_button(LB) == 1:
@@ -253,25 +268,18 @@ def pilotage():
         joyR = joystick.get_axis(R_joy_y)
         joyL = joystick.get_axis(L_joy_y)
 
-        msgG = "Moteur gauche :" 
-        msgD = "Moteur droit  :"
-
         if joyL > 0:
             sens_droit    = 0
             moteur_droit  = uint8(255*joyL)
-            #msgD += " -"
         else :
             sens_droit    = 1
             moteur_droit  = uint8(-255*joyL)
-            #msgD += "  "
         if joyR > 0:
             sens_gauche   = 0
             moteur_gauche = uint8(255*joyR)
-            #msgG += " -"
         else :
             sens_gauche   = 1
             moteur_gauche = uint8(-255*joyR)
-            #msgG += "  "
 
         if moteur_droit  < 15:
             moteur_droit  = uint8(0)
@@ -282,20 +290,13 @@ def pilotage():
             moteur_droit  = uint8(0)
             moteur_gauche = uint8(0)
 
-        #msgG += "{}".format(moteur_gauche)
-        #msgD += "{}".format(moteur_droit)    
-
-        #textPrint.tprint(screen, msgG)
-        #textPrint.tprint(screen, msgD)        
-        #textPrint.tprint(screen, "")
-
         if controlOeuf == uint8(0) :
             textPrint.tprint(screen, "Oeufs : desactives")
         else :
             textPrint.tprint(screen, "Oeufs : actives")
         textPrint.tprint(screen, "")
         
-        #Affichage des mouvement preenregistres
+        #Affichage des mouvements preenregistres
         textPrint.tprint(screen, "Liste des mouvements enregistres :")
         textPrint.indent()
         if len(mouvements) != 0:            
@@ -332,20 +333,22 @@ def pilotage():
         clock.tick(FPS)
 
 def creation_mouvement_base():
-    #setup
-    moteur_droit = uint8(0)
-    moteur_gauche = uint8(0)
-    moteur_droit  = uint8(0)
-    moteur_gauche = uint8(0)
-    sens_droit    = uint8(0)
-    sens_gauche   = uint8(0)
-    joueSequence  = uint8(0)
+    #Setup
+    moteur_droit    = uint8(0)
+    moteur_gauche   = uint8(0)
+    moteur_droit    = uint8(0)
+    moteur_gauche   = uint8(0)
+    sens_droit      = uint8(0)
+    sens_gauche     = uint8(0)
+    joueSequence    = uint8(0)
+    jouer_mouvement = False
+    duree = 0
     global close
     record = False
     nom = ""
     curseur = "|"
     cpt = 0
-    #attente d'activation de l'enregistrement
+    #Attente d'activation de l'enregistrement
     while not record:
         for event in pygame.event.get():            
             if event.type == pygame.QUIT:
@@ -380,25 +383,109 @@ def creation_mouvement_base():
         pygame.display.flip()
         clock.tick(FPS)
 
+    #Enregistrer d'abord la liste des mouvements pour que les numeros concordent
+
+    #Enregistrement du deplacement    
     while record:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 close = True
                 return
             elif event.type == pygame.JOYBUTTONDOWN:
-                if joystick.get_button(START) == 1:
+                if joystick.get_button(BACK) == 1:
                     record = False
+                elif len(mouvements) != 0 and not jouer_mouvement:
+                    if (joystick.get_button(START) == 1 or joystick.get_button(LT) == 1) :
+                        jouer_mouvement = True
+                        joueSequence = uint8(selection + 1)
+                    elif joystick.get_button(LB) == 1:
+                        if selection == 0:
+                            selection = len(mouvements) - 1
+                        else :
+                            selection -= 1
+                    elif joystick.get_button(RB) == 1:
+                        if selection == len(mouvements) -1:
+                            selection = 0
+                        else :
+                            selection += 1        
+        
+        joyR = joystick.get_axis(R_joy_y)
+        joyL = joystick.get_axis(L_joy_y)
 
+        if joyL > 0:
+            sens_droit    = 0
+            moteur_droit  = uint8(255*joyL)
+        else :
+            sens_droit    = 1
+            moteur_droit  = uint8(-255*joyL)
+        if joyR > 0:
+            sens_gauche   = 0
+            moteur_gauche = uint8(255*joyR)
+        else :
+            sens_gauche   = 1
+            moteur_gauche = uint8(-255*joyR)
+
+        if moteur_droit  < 15:
+            moteur_droit  = uint8(0)
+        if moteur_gauche < 15:
+            moteur_gauche = uint8(0)
+            
         screen.fill(WHITE)
         textPrint.reset()
         textPrint.tprint(screen, "Creation de deplacement de la base")
-        textPrint.tprint(screen, "")
+        textPrint.tprint(screen, "Duree : {}".format(duree))
         textPrint.tprint(screen, "Enregistrement en cours de \"{}\"".format(nom))
-        textPrint.tprint(screen, "Appuyer sur START pour mettre fin a l'enregistrement")
+        textPrint.tprint(screen, "Appuyer sur BACK pour mettre fin a l'enregistrement")
         textPrint.tprint(screen, "")
-        
+        #Affichage des mouvement preenregistres
+        textPrint.tprint(screen, "Liste des mouvements enregistres :")
+        textPrint.indent()
+        if len(mouvements) != 0:            
+            for k in range(0,len(mouvements)):
+                if selection == k:
+                    textPrint.indent()
+                    if jouer_mouvement:
+                        textPrint.tprint(screen, str(mouvements[k])[2:-1] + " <-- en cours")
+                    else:
+                        textPrint.tprint(screen, mouvements[k])
+                    textPrint.unindent()
+                else :
+                    textPrint.tprint(screen, mouvements[k])
+        else :
+            textPrint.tprint(screen, "Vous n'avez enregistre aucun mouvements.")
+
+        msg_to_send = [uint8(1),sens_gauche,moteur_gauche,sens_droit,moteur_droit,uint8(0),joueSequence]
+        braccio.send(bytes(msg_to_send))
+
+        if jouer_mouvement:
+            if joueSequence != 0:
+                joueSequence = 0
+            data = braccio.recv(256)
+            if data == b'done':
+                jouer_mouvement = False
+
+        duree += 1/30
         pygame.display.flip()
         clock.tick(FPS)
+    
+    #Fin de l'enregistrement
+    msg_to_send = [uint8(1),uint8(0),uint8(0),uint8(0),uint8(0),uint8(0),uint8(0)]
+    braccio.send(bytes(msg_to_send))
+
+    while(True):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                close = True
+                return
+            elif event.type == pygame.JOYBUTTONDOWN:
+                return
+        screen.fill(WHITE)
+        textPrint.reset()
+        textPrint.tprint("Le mouvement \"{}\" a ete enregistre.")
+        textPrint.tprint("il dure : {} secondes.".format(duree))
+        pygame.display.flip()
+        clock.tick(FPS)
+    
 
 # Menu principal
 while not error and not close:
