@@ -235,7 +235,7 @@ def creation_mouvement_bras():
                         creation = True
                         braccio.send(b'START')
                         msg = "Creation en cours du mouvement \"" + nom + "\""
-                    if joystick.get_button(STOP) == 1:
+                    if joystick.get_button(BACK) == 1:
                         braccio.send(b'STOP')
         
         #Enregistrement du mouvement
