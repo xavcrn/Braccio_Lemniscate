@@ -99,7 +99,7 @@ atmpt = 0
 done = False
 while not done and not error:
     msg = "Allumage de Braccio"
-    ans = os.system("ssh braccio \"sudo systemctl start Braccio.service\"")
+    ans = os.system("ssh braccio \"sudo systemctl restart Braccio.service\"")
     if ans == 0:
         done = True
         msg = "Braccio allume"
@@ -189,6 +189,7 @@ def creation_mouvement_bras():
     cpt = 0
     curseur = "|"
     duree = 0
+    step = 0
     while not fin_creation and not close:
         if not creation:
             for event in pygame.event.get():            
@@ -210,13 +211,16 @@ def creation_mouvement_bras():
                             msg_to_send.append(0)
                             braccio.send(msg_to_send)
                             msg = "Creation en cours du mouvement \"" + nom + "\""
-                            
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE:
                         nom = nom[:-1]
                     else:
                         nom += event.unicode
         else:
+            step += 1
+            if step == FPS:
+                step = 0
+                duree += 1
             for event in pygame.event.get():
                 if event.type == pygame.JOYBUTTONDOWN:
                     if joystick.get_button(START) == 1:
