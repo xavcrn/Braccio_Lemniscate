@@ -1,3 +1,4 @@
+from tkinter import E
 from numpy import uint8, uint8
 import pygame
 import socket
@@ -190,8 +191,10 @@ def creation_mouvement_bras():
     curseur = "|"
     duree = 0
     step = 0
+    select_pos = False
     while not fin_creation and not close:
-        if not creation:
+        #Selection du nom du mouvement
+        if not select_pos:
             for event in pygame.event.get():            
                 if event.type == pygame.QUIT:
                     close = True
@@ -202,7 +205,7 @@ def creation_mouvement_bras():
                         if len(nom) == 0:
                             msg = "Veuillez entrer un nom pour votre nouveau mouvement"
                         else:
-                            creation = True
+                            select_pos = True
                             msg_to_send = bytearray(b'\x02')
                             msg_to_send.append(60)
                             nom_bytes = bytes(nom, 'ASCII')
@@ -216,6 +219,22 @@ def creation_mouvement_bras():
                         nom = nom[:-1]
                     else:
                         nom += event.unicode
+            # fait clignoter la barre
+            cpt += 1
+            if cpt == 16:
+                curseur = ""
+            elif cpt == 32:
+                curseur = "|"
+                cpt = 0
+        #Selection de la position initiale du mouvement
+        elif not creation:
+            for event in pygame.event.get():
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if joystick.get_button(START) == 1:
+                        creation = True
+                        braccio.send(b'START')
+                        msg = "Selectionnez la position initiale de votre mouvement puis appuyez sur START pour commencer l'enregistrement"
+        #Enregistrement du mouvement
         else:
             step += 1
             if step == FPS:
@@ -230,13 +249,6 @@ def creation_mouvement_bras():
                         msg = "Le mouvement \"" + nom + "\" a ete cree avec succes"
                         mouvements.append(nom)
 
-        # fait clignoter la barre
-        cpt += 1
-        if cpt == 16:
-            curseur = ""
-        elif cpt == 32:
-            curseur = "|"
-            cpt = 0
 
         screen.fill(WHITE)
         textPrint.reset()        
