@@ -144,15 +144,41 @@ int Braccio_robot::init(){
 }
 
 int Braccio_robot::creation(char commande[]){
-    ROS_INFO("remote_server : Creating a new movement named : \"%s\"",commande + 2);
+    char buf[5];
+    ROS_INFO("remote_server : Creation of new movement : \"%s\"",commande + 2);
+    
+    ROS_INFO("remote_server : Choosing the first position");
+
+    //Demande à pypot de passer en mode compliant
+    std_msgs::String compliant;
+    compliant.data = "__compliant__";
+    recording->publish(compliant);
+
+    //Attend l'ordre de démarrer l'enregistrement
+    while(true){
+        read(client_sd, buf, 6);
+        if(buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'O' && buf[3] == 'P'){
+            std_msgs::String stop;
+            stop.data = "STOP";
+            recording->publish(stop);
+            return 1;
+        }
+        if(buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'A' && buf[3] == 'R' && buf[4] == 'T'){
+            break;
+        }
+    }
+
+    //Envoie la commande à pypot de créer un nouveau mouvement 
     string new_move(commande + 2);
     std_msgs::String rec;
     rec.data = new_move.data();
-    //Envoyer la commande à pypot de créer un nouveau mouvement 
-    static string recording_str("recording");
-    write(client_sd, recording_str.data(), recording_str.length());
     recording->publish(rec);
-    char buf[5];
+
+    ROS_INFO("remote_server : Recording...");
+
+    //static string recording_str("recording");
+    //write(client_sd, recording_str.data(), recording_str.length());
+    
     while(true){
         read(client_sd, buf, 5);
         if(buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'O' && buf[3] == 'P'){
@@ -165,7 +191,7 @@ int Braccio_robot::creation(char commande[]){
     rec.data = "STOP";
     recording->publish(rec);
     #ifdef DEBUG4
-    cout << "\"STOP\" sentS to pypot" << endl;
+    cout << "\"STOP\" sent to pypot" << endl;
     #endif
     string result("success");
     mouvements.push_back(new_move);

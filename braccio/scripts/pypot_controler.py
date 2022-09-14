@@ -133,11 +133,11 @@ def record_ctrl(msg):
     global recording
     global move_to_record
     print(msg)
-    if msg.data == "STOP":
-        print("msg = STOP")
+    if msg.data == "__compliant__":
+        braccio.compliant = True
+    elif msg.data == "STOP":
         recording = False
     elif recording == False:
-        print("msg != STOP")
         move_to_record = msg.data
         recording = True
 
