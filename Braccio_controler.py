@@ -213,7 +213,7 @@ def creation_mouvement_bras():
                                 msg_to_send.append(k)
                             msg_to_send.append(0)
                             braccio.send(msg_to_send)
-                            msg = "Creation en cours du mouvement \"" + nom + "\""
+                            msg = "Selectionnez la position initiale de votre mouvement puis appuyez sur START pour commencer l'enregistrement"
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE:
                         nom = nom[:-1]
@@ -226,6 +226,7 @@ def creation_mouvement_bras():
             elif cpt == 32:
                 curseur = "|"
                 cpt = 0
+        
         #Selection de la position initiale du mouvement
         elif not creation:
             for event in pygame.event.get():
@@ -233,7 +234,10 @@ def creation_mouvement_bras():
                     if joystick.get_button(START) == 1:
                         creation = True
                         braccio.send(b'START')
-                        msg = "Selectionnez la position initiale de votre mouvement puis appuyez sur START pour commencer l'enregistrement"
+                        msg = "Creation en cours du mouvement \"" + nom + "\""
+                    if joystick.get_button(STOP) == 1:
+                        braccio.send(b'STOP')
+        
         #Enregistrement du mouvement
         else:
             step += 1
@@ -266,6 +270,12 @@ def creation_mouvement_bras():
         clock.tick(FPS)
 
     #Fin de l'enregistrement
+    if duree == 0:
+        return
+    
+    sec = int(duree%60)
+    min = int(duree/60)
+
     while(True):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -276,7 +286,7 @@ def creation_mouvement_bras():
         screen.fill(WHITE)
         textPrint.reset()
         textPrint.tprint(screen, "Le mouvement \"{}\" a ete enregistre.".format(nom))
-        textPrint.tprint(screen, "il dure : {} secondes.".format(duree))
+        textPrint.tprint(screen, "il dure : {}:{}.".format(min,sec))
         pygame.display.flip()
         clock.tick(FPS)
 
