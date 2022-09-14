@@ -18,7 +18,7 @@ using namespace std;
 
 #define PORT 4242
 #define SERIAL_PORT "/dev/ttyACM1"
-#define MOVE_DIR "/home/poppy/catkin_ws/src/braccio/moves"
+#define MOVE_DIR "/home/poppy/catkin_ws/src/braccio/moves/jouables"
 
 //#define DEBUG1
 //#define DEBUG2

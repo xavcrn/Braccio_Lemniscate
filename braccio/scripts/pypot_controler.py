@@ -8,11 +8,11 @@ from std_msgs.msg import Bool, String
 from pypot.primitive.move import MoveRecorder, Move, MovePlayer
 
 ## Define all global variables
-MOVE_PATH = "/home/poppy/catkin_ws/src/braccio/moves/"
+MOVE_PATH = "/home/poppy/catkin_ws/src/braccio/moves/jouables/"
 # Define sleeping position
 sleeping_position = [0,4,-109,-72,0,0]
 # Define speeds
-egg_motor_speed = [10,10,10,10,30,30]
+egg_motor_speed = [30,30,30,30,50,50]
 max_motor_speed = [90,100,110,120,130,90]
 safety_motor_speed = [35,35,35,35,35,35]
 reach_initial_speed = [50,50,50,50,50,50]
@@ -122,7 +122,12 @@ def egg_set_position(egg_target):
     egg_position[2] = egg_target.m2
     egg_position[3] = egg_target.m3
     egg_position[4] = egg_target.m4
-    egg_position[5] = egg_target.m5
+    if egg_target.m5 >= 90:
+        egg_position[5] = 90
+    elif egg_target.m5 <= -90:
+        egg_position[5] = -90
+    else:
+        egg_position[5] = egg_target.m5
 
 def record_ctrl(msg):
     global recording
@@ -148,6 +153,8 @@ rospy.Subscriber("recording", String, record_ctrl)
 rospy.loginfo("pypot_controler : Braccio arm Launched")
 
 rate = rospy.Rate(20)
+
+#go_sleep()
 
 rospy.loginfo("pypot_controler : Enterring loop")
 while not rospy.is_shutdown():

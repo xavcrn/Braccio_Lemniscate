@@ -66,7 +66,3 @@ catkin_install_python(PROGRAMS scripts/receiver.py
 catkin_install_python(PROGRAMS scripts/pypot_controler.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
-catkin_install_python(PROGRAMS scripts/control_test.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)

@@ -22,11 +22,13 @@ using namespace std;
 int16_t resize(int S, int N, int min, int max);
 
 int main(int argc, char* argv[]){
+
     int receiver_PID = fork();
     if(receiver_PID == 0){
         int buf = system("sudo /home/poppy/catkin_ws/src/braccio/receiver/receive6");
         return 0;
     }
+
     ros::init(argc, argv, "egg_receiver");
     ros::NodeHandle n;
     ros::Publisher pub = n.advertise<braccio::egg_angles>("egg_angles",5);
@@ -46,8 +48,8 @@ int main(int argc, char* argv[]){
     int N[6] = {0};
 
     // Limits angles of the robot
-    int Amin[6] = {-180,-130,-120,-100,-180, 0};
-    int Amax[6] = { 180, 130, 120, 100, 180,90};
+    int Amin[6] = {-180,-130,-120,-100,-180, -180};
+    int Amax[6] = { 180, 130, 120, 100, 180, 180};
 
     braccio::egg_angles angles;
     angles.m0 = 0;
@@ -90,7 +92,7 @@ int main(int argc, char* argv[]){
             }
             pub.publish(angles);
 
-            ROS_INFO("egg_receiver : %4d %4d %4d %4d %4d %4d",angles.m0,angles.m1,angles.m2,angles.m3,angles.m4,angles.m5);
+            //ROS_INFO("egg_receiver : %4d %4d %4d %4d %4d %4d",angles.m0,angles.m1,angles.m2,angles.m3,angles.m4,angles.m5);
         }
     }
 
@@ -99,6 +101,7 @@ int main(int argc, char* argv[]){
     sprintf(cmd,"sudo kill -9 %d",receiver_PID);
     system(cmd);
     ROS_INFO("egg_receiver : receive shutdown");
+
     return 0;
 }
 
