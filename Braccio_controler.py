@@ -125,7 +125,7 @@ sleep(10)
 msg = "Connection a Braccio"
 while not error and not done:    
     try:
-        braccio.connect(("braccio.local", 4242))
+        braccio.connect(("10.99.99.1", 4242))
     except (ConnectionRefusedError, OSError):
         atmpt += 1
         msg += "."
@@ -235,8 +235,11 @@ def creation_mouvement_bras():
                         creation = True
                         braccio.send(b'START')
                         msg = "Creation en cours du mouvement \"" + nom + "\""
+                    """
                     if joystick.get_button(BACK) == 1:
                         braccio.send(b'STOP')
+                        fin_creation = True
+                    """
         
         #Enregistrement du mouvement
         else:
@@ -313,8 +316,8 @@ def pilotage():
             if event.type == pygame.QUIT:
                 close = True
             elif event.type == pygame.JOYBUTTONDOWN:
-                if joystick.get_button(BACK) == 1:
-                    fin_pilotage = True
+                if joystick.get_button(BACK) == 1 and not jouer_mouvement:
+                    fin_pilotage = True               
                 elif joystick.get_button(RT) == 1 and not jouer_mouvement:
                     if controlOeuf == uint8(0):
                         controlOeuf = uint8(1)
