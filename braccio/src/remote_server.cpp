@@ -16,14 +16,9 @@
 
 using namespace std;
 
-#define PORT 4242
-#define SERIAL_PORT "/dev/ttyACM1"
-#define MOVE_DIR "/home/poppy/catkin_ws/src/braccio/moves/jouables"
-
-//#define DEBUG1
-//#define DEBUG2
-//#define DEBUG3
-#define DEBUG4
+int PORT = 4242;
+char SERIAL_PORT[] = "/dev/ttyACM1";
+char MOVE_DIR[] = "/home/poppy/catkin_ws/src/braccio/moves/jouables";
 
 bool Sequence = false;
 int client_sd;
@@ -31,14 +26,6 @@ string success("success");
 string error("error");
 
 void Free_sequence(std_msgs::Bool retour){
-    #ifdef DEBUG2
-    ROS_INFO("remote_server : Free_sequence :");
-        if(retour.data){
-            ROS_INFO("remote_server : Received True");
-        } else {
-            ROS_INFO("remote_server : Received False");
-        }
-    #endif
     Sequence = retour.data;
 }
 
@@ -66,15 +53,10 @@ Braccio_robot::~Braccio_robot(){
 }
 
 void Braccio_robot::sleep(){
-    #ifdef DEBUG1
-    ROS_INFO("remote_server : Braccio is going to sleep");
-    #endif
     pause();
     std_msgs::String dodo;
     dodo.data = "sleep";
-    #ifndef DEBUG1
     Sequence = true;
-    #endif
     player_pub->publish(dodo);
     
     while(Sequence){
@@ -109,15 +91,9 @@ int Braccio_robot::init(){
     if(res >= 0){ // s'il n'y a pas d'erreur
         // Demander la mise en position initiale du bras
         std_msgs::String msg;
-        msg.data = "initial";        
-        #ifndef DEBUG1
+        msg.data = "initial";
         Sequence = true;
-        #endif
         player_pub->publish(msg);
-        #ifdef DEBUG2
-        ROS_INFO("remote_server : Publish : \"%s\"   Waiting for answer",msg.data.c_str());
-        ROS_INFO("remote_server : spinOnce");
-        #endif
                 
         // Attendre la terminaison du mouvement
         while(Sequence){
@@ -176,23 +152,14 @@ int Braccio_robot::creation(char commande[]){
 
     ROS_INFO("remote_server : Recording...");
 
-    //static string recording_str("recording");
-    //write(client_sd, recording_str.data(), recording_str.length());
-    
     while(true){
         read(client_sd, buf, 5);
         if(buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'O' && buf[3] == 'P'){
             break;
         }
     }
-    #ifdef DEBUG4
-    cout << "\"STOP\" received from client" << endl;
-    #endif
     rec.data = "STOP";
     recording->publish(rec);
-    #ifdef DEBUG4
-    cout << "\"STOP\" sent to pypot" << endl;
-    #endif
     string result("success");
     mouvements.push_back(new_move);
     write(client_sd, result.data(), result.length());
@@ -228,13 +195,7 @@ int Braccio_robot::pilotage(char commande[]){
         ros::spinOnce();
     }
     if(run == true && Sequence == false){ // Sequence est redescendu à false
-        #ifdef DEBUG3
-        ROS_INFO("remote_server : Sequence done");
-        #endif
         write(client_sd, done.data(), done.length());
-        #ifdef DEBUG3
-        ROS_INFO("remote_server : Done sent");
-        #endif
         run = false;
     }
     else if(run == true && Sequence == true){
@@ -245,13 +206,7 @@ int Braccio_robot::pilotage(char commande[]){
         run = true;
         std_msgs::String msg;
         msg.data = mouvements[commande[6]-1].data();
-        #ifdef DEBUG1
-        ROS_INFO("remote_server : Publishing");
-        #endif
         player_pub->publish(msg);
-        #ifdef DEBUG1
-        ROS_INFO("remote_server : Published");
-        #endif
         write(client_sd, running.data(), running.length());
     }
     return res;
@@ -282,10 +237,7 @@ int main(int argc, char* argv[]){
             ROS_INFO("remote_server : Socket créée");
         }
     }
-    /*if(server_sd < 0){
-        ROS_ERROR("remote_server : Erreur lors de la création de la socket");
-        exit(-1);
-    }*/
+
     essais = 1;
     while(bind(server_sd, (struct sockaddr*) &server_sock, sizeof(server_sock)) < 0){
         if(essais++ > 50){
@@ -299,10 +251,6 @@ int main(int argc, char* argv[]){
     if(essais > 1){
         ROS_INFO("remote_server : bind réussi");
     }
-    /*if(bind(server_sd, (struct sockaddr*) &server_sock, sizeof(server_sock)) < 0){
-        ROS_ERROR("remote_server : Erreur lors du bind");
-        exit(-1);
-    }*/
     listen(server_sd, 2);
 
     // Prépare une socket client
@@ -385,9 +333,6 @@ int main(int argc, char* argv[]){
                         break;
                     case 2 : // creation
                         braccio_robot.creation(recep);
-                        #ifdef DEBUG4
-                        cout << "creation finished" << endl;
-                        #endif
                         break;
                     case 3 : // fin
                         ROS_INFO("remote_server : Connection closed by client. Braccio is going to sleep.");
