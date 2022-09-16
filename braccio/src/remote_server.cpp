@@ -10,6 +10,7 @@
 #include <dirent.h>
 
 #include "ros/ros.h"
+#include "ros/master.h"
 #include "braccio/creation.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Bool.h"
@@ -19,7 +20,6 @@ using namespace std;
 int PORT = 4242;
 char SERIAL_PORT[] = "/dev/ttyACM1";
 char MOVE_DIR[] = "/home/poppy/catkin_ws/src/braccio/moves/jouables";
-
 bool Sequence = false;
 int client_sd;
 string success("success");
@@ -56,7 +56,6 @@ void Braccio_robot::sleep(){
     pause();
     std_msgs::String dodo;
     dodo.data = "sleep";
-    Sequence = true;
     player_pub->publish(dodo);
     
     while(Sequence){
@@ -88,16 +87,35 @@ int Braccio_robot::init(){
 
     res = pause(); // mise en pause des moteurs
 
+    //S'assure que le node pypot_controler est bien actif
+    ros::V_string nodes;
+    ros::master::getNodes(nodes);
+    bool found = false;
+    while(found){
+        ros::Duration(0.5).sleep();
+        for(int k = 0; k < nodes.size(); k++){
+            if (nodes[k] == "pypot_controler"){
+                found = true;
+                break;
+            }
+        }        
+        ros::master::getNodes(nodes);
+    }
+
     if(res >= 0){ // s'il n'y a pas d'erreur
         // Demander la mise en position initiale du bras
         std_msgs::String msg;
-        msg.data = "initial";
+        msg.data = "initial";   
         Sequence = true;
-        player_pub->publish(msg);
-                
+        player_pub->publish(msg);                
         // Attendre la terminaison du mouvement
+        // Si on attend plus de 5 secondes, on renvoie la commande
+        double first_try = ros::Time::now().toSec();
         while(Sequence){
             ros::spinOnce();
+            if(Sequence && (ros::Time::now().toSec() - first_try > 5)){
+                player_pub->publish(msg);
+            }
         }
     }
     
@@ -152,6 +170,9 @@ int Braccio_robot::creation(char commande[]){
 
     ROS_INFO("remote_server : Recording...");
 
+    //static string recording_str("recording");
+    //write(client_sd, recording_str.data(), recording_str.length());
+    
     while(true){
         read(client_sd, buf, 5);
         if(buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'O' && buf[3] == 'P'){
@@ -237,7 +258,6 @@ int main(int argc, char* argv[]){
             ROS_INFO("remote_server : Socket créée");
         }
     }
-
     essais = 1;
     while(bind(server_sd, (struct sockaddr*) &server_sock, sizeof(server_sock)) < 0){
         if(essais++ > 50){
@@ -249,7 +269,7 @@ int main(int argc, char* argv[]){
         ros::Duration(3.0).sleep();
     }
     if(essais > 1){
-        ROS_INFO("remote_server : bind réussi");
+        ROS_INFO("remote_server : bind reussi");
     }
     listen(server_sd, 2);
 
