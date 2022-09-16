@@ -35,7 +35,7 @@ def set_speeds(speeds):
 
 def wait_for_position():
     for m in braccio.arm:
-        while abs(m.goal_position - m.present_position) > 2:
+        while abs(m.goal_position - m.present_position) > 4:
             sleep(0.1)
 
 def initial():
@@ -87,7 +87,7 @@ def play(move):
     with open(move_name) as f:
         m = Move.load(f)
     move_player = MovePlayer(braccio, m)
-    # Go to first position before begining movement
+    # Go to first position before begin movement
     set_speeds(reach_initial_speed)
     braccio.compliant = False
     braccio.arm[0].goal_position = m.positions()[0]['m0'][0]
@@ -108,7 +108,7 @@ def play(move):
     
     pub.publish(True)
     move_player.start()
-    # Wait for movement to end
+    # Wait for the movement to end
     sleep(move_player.duration() + 0.1)
     pub.publish(False)
 
@@ -132,7 +132,6 @@ def egg_set_position(egg_target):
 def record_ctrl(msg):
     global recording
     global move_to_record
-    print(msg)
     if msg.data == "__compliant__":
         braccio.compliant = True
     elif msg.data == "STOP":
@@ -148,19 +147,15 @@ rospy.Subscriber("egg_angles", egg_angles, egg_set_position)
 rospy.Subscriber("recording", String, record_ctrl)
 
 # Start creation service
-#s = rospy.Service("create_move", creation, record)
-
 rospy.loginfo("pypot_controler : Braccio arm Launched")
 
 rate = rospy.Rate(20)
 
-#go_sleep()
-
 rospy.loginfo("pypot_controler : Enterring loop")
+
 while not rospy.is_shutdown():
     if recording:
         record(move_to_record)
-        print("move recorded")
     elif egg_enable:
         set_speeds(egg_motor_speed)
         for k in range(6):
